@@ -1,5 +1,9 @@
 import { Redirect } from 'expo-router';
-const role: 'user' | 'organizer' = 'user'; // change type here for testing
+
+const MODE: 'auth' | 'app' = 'auth';       // change to 'app' to test tabs
+const ROLE: 'user' | 'organizer' = 'user'; // used only when MODE === 'app'
+
 export default function Index() {
-  return role === 'organizer' ? <Redirect href="/(organizer)" /> : <Redirect href="/(tabs)" />;
+  if (MODE === 'auth') return <Redirect href="/(auth)/signup" />; // or "/(auth)/signup"
+  return ROLE === 'organizer' ? <Redirect href="/(organizer)" /> : <Redirect href="/(tabs)" />;
 }
