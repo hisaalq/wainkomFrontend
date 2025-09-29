@@ -1,15 +1,10 @@
 import { COLORS } from '@/assets/style/color';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
-
-
-const queryClient = new QueryClient();
 
 const TabsLayout = () => {
 
   return (
-    <QueryClientProvider client={queryClient}>
       <Tabs screenOptions={{
         headerStyle: { backgroundColor:COLORS.backgroundd },
         headerTintColor: COLORS.primary,
@@ -42,7 +37,6 @@ const TabsLayout = () => {
         <MaterialCommunityIcons name="cog" color={color} size={size} /> 
         }} />
       </Tabs>
-    </QueryClientProvider>
   );
 };
 
