@@ -4,5 +4,5 @@ export interface SignUpInfo {
     password: string;
     verifyPassword: string;
     phoneNumber?: string;
-    type?: "organizer" | "user" | string;
+    isOrganizer: boolean;
 }
