@@ -1,3 +1,42 @@
+import axios from "axios";
+import instance from ".";
+export interface EventItem {
+  _id: string;
+  title: string;
+  desc: string;
+  description?: string;
+  image: string;
+  location: any;
+  date: string;
+  time: string;
+  rating: number;
+}
+
+const BASE_URL = "http://192.168.7.245:8000/api"; // تأكد إنه صحيح
+
+export const fetchEvents = async (): Promise<EventItem[]> => {
+  try {
+    const { data } = await axios.get(`${BASE_URL}/events`);
+    console.log("✅ fetchEvents response:", data);
+    return data || []; // لازم يرجع array حتى لو فاضي
+  } catch (err) {
+    console.error("❌ fetchEvents error:", err);
+    return []; // عشان ما يرجع undefined
+  }
+};
+
+export const fetchEventById = async (id: string): Promise<EventItem> => {
+  try {
+    const { data } = await axios.get(`${BASE_URL}/events/${id}`);
+    console.log("✅ fetchEventById response:", data);
+    return data;
+  } catch (err) {
+    console.error("❌ fetchEventById error:", err);
+    throw err;
+  }
+};
+
+=======
 // app/api/events.ts
 import api from "./index"; // your axios instance (with getToken interceptor)
 
@@ -25,8 +64,4 @@ export async function fetchEventsApi() {
   return data;
 }
 
-// Optional helpers you may need later:
-// export const getEventsByOrg = (orgId: string) => api.get(`${BASE}/org/${orgId}`);
-// export const getEventsByCategory = (categoryId: string) => api.get(`${BASE}/${categoryId}`);
-// export const updateEventApi = (id: string, updates: Partial<CreateEventBody>) => api.put(`${BASE}/${id}`, updates);
-// export const deleteEventApi = (id: string) => api.delete(`${BASE}/${id}`);
+
