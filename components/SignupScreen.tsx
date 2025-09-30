@@ -14,7 +14,7 @@ export default function SignupScreen() {
     const [confirm, setConfirm] = useState('');
 
     const onSignup = () => {
-        router.replace('/');
+        router.replace('/(tabs)/home');
     };
 
     const SegButton = ({ label, value }: { label: string; value: Role }) => {

@@ -4,6 +4,6 @@ import EventsHeader from "../../components/EventsHeader";
 
 
 
-export default function event() {
-  return <EventsHeader />
+export default function Index() {
+  return <Text>hi</Text>
 }
