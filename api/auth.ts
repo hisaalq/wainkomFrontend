@@ -7,14 +7,20 @@ import { storeToken } from "./storage";
 type RegisterResponse = { token: string; user?: any; message?: string };
 
 const register = async (userInfo: SignUpInfo) => {
-  const { verifyPassword, ...payload } = userInfo;
-  const { data } = await instance.post<RegisterResponse>("/api/auth/signup", payload);
+  const { verifyPassword, name, email, password, isOrganizer } = userInfo;
+  const payload = {
+    username: name,
+    email,
+    password,
+    isOrganizer: isOrganizer === true,
+  };
+  const { data } = await instance.post<RegisterResponse>("/auth/signup", payload);
   await storeToken(data.token);
   return data;
 };
 
 const login = async (userInfo: LoginInfo) => {
-  const { data } = await instance.post<RegisterResponse>("/api/auth/signin", userInfo);
+  const { data } = await instance.post<RegisterResponse>("/auth/signin", userInfo);
   await storeToken(data.token);
   return data;
 };
