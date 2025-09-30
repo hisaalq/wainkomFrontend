@@ -1,8 +1,9 @@
+import { register } from '@/api/auth';
 import { COLORS } from '@/assets/style/color';
 import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 type Role = 'user' | 'organizer';
 
@@ -12,9 +13,33 @@ export default function SignupScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const onSignup = () => {
-        router.replace('/');
+    const onSignup = async () => {
+        if (!username || !email || !password) {
+            Alert.alert('Missing info', 'Please fill all required fields.');
+            return;
+        }
+        if (password !== confirm) {
+            Alert.alert('Password mismatch', 'Passwords do not match.');
+            return;
+        }
+        try {
+            setLoading(true);
+            await register({
+                name: username,
+                email,
+                password,
+                verifyPassword: confirm,
+                type: role,
+            });
+            router.replace('/');
+        } catch (err: any) {
+            const msg = err?.response?.data?.msg || err?.response?.data?.message || 'Signup failed';
+            Alert.alert('Error', String(msg));
+        } finally {
+            setLoading(false);
+        }
     };
 
     const SegButton = ({ label, value }: { label: string; value: Role }) => {
@@ -79,8 +104,8 @@ export default function SignupScreen() {
                 style={FORMS.input}
             />
 
-            <Pressable onPress={onSignup} style={[BUTTONS.primary, { marginTop: 12 }]}>
-                <Text style={BUTTONS.primaryText}>Sign Up</Text>
+            <Pressable disabled={loading} onPress={onSignup} style={[BUTTONS.primary, { marginTop: 12, opacity: loading ? 0.7 : 1 }]}>
+                {loading ? <ActivityIndicator color={COLORS.backgroundn} /> : <Text style={BUTTONS.primaryText}>Sign Up</Text>}
             </Pressable>
 
             <View style={{ alignItems: 'center', marginTop: 6 }}>

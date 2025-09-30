@@ -1,15 +1,30 @@
+import { login } from '@/api/auth';
 import { COLORS } from '@/assets/style/color';
 import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const onLogin = () => {
-        router.replace('/');
+    const onLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Missing info', 'Please enter your email and password.');
+            return;
+        }
+        try {
+            setLoading(true);
+            await login({ email, password });
+            router.replace('/');
+        } catch (err: any) {
+            const msg = err?.response?.data?.msg || err?.response?.data?.message || 'Login failed';
+            Alert.alert('Error', String(msg));
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -38,8 +53,8 @@ export default function LoginScreen() {
                 style={FORMS.input}
             />
 
-            <Pressable onPress={onLogin} style={[BUTTONS.primary, { marginTop: 16 }]}>
-                <Text style={BUTTONS.primaryText}>Log In</Text>
+            <Pressable disabled={loading} onPress={onLogin} style={[BUTTONS.primary, { marginTop: 16, opacity: loading ? 0.7 : 1 }]}>
+                {loading ? <ActivityIndicator color={COLORS.backgroundn} /> : <Text style={BUTTONS.primaryText}>Log In</Text>}
             </Pressable>
 
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
