@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const colors = {
   bg: "#0F1115",
@@ -64,6 +65,7 @@ const OrgnaizerHomeScreen = () => {
   }, []);
 
   return (
+    <SafeAreaView>
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView
@@ -222,6 +224,7 @@ const OrgnaizerHomeScreen = () => {
         </View>
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 

@@ -22,7 +22,7 @@ export async function createEventApi(body: CreateEventBody) {
 
 export async function fetchEventsApi() {
   const { data } = await api.get(BASE);
-  return data;
+  return [];
 }
 
 // Optional helpers you may need later:
