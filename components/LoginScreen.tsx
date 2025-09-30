@@ -3,12 +3,14 @@ import { storeToken } from '@/api/storage';
 import { COLORS } from '@/assets/style/color';
 import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
 import AuthContext from '@/context/authcontext';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { jwtDecode } from 'jwt-decode';
 import { useContext, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 
+
 export default function LoginScreen() {
+    const router = useRouter();
     const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -26,6 +28,7 @@ export default function LoginScreen() {
             try {
                 const decoded: any = jwtDecode(data.token);
                 setIsOrganizer(Boolean(decoded?.isOrganizer));
+                router.replace(decoded?.isOrganizer ? "/organizer" : "/user");
             } catch {}
             setIsAuthenticated(true);
         } catch (err: any) {

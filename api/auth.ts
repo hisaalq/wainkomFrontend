@@ -14,13 +14,13 @@ const register = async (userInfo: SignUpInfo) => {
     password,
     isOrganizer: isOrganizer === true,
   };
-  const { data } = await instance.post<RegisterResponse>("/api/auth/signup", payload);
+  const { data } = await instance.post<RegisterResponse>("/auth/signup", payload);
   await storeToken(data.token);
   return data;
 };
 
 const login = async (userInfo: LoginInfo) => {
-  const { data } = await instance.post<RegisterResponse>("/api/auth/signin", userInfo);
+  const { data } = await instance.post<RegisterResponse>("/auth/signin", userInfo);
   await storeToken(data.token);
   return data;
 };

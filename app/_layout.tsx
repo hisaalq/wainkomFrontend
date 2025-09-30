@@ -1,4 +1,4 @@
-import { getToken } from "@/api/storage";
+import { deleteToken, getToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,10 +18,7 @@ export default function RootLayout() {
     const token = await getToken();
 
     if (token) {
-      console.log("token", typeof token);
       const decodedToken = jwtDecode(token);
-      console.log("decodedToken", typeof decodedToken);
-      console.log("decodedToken", decodedToken);
       setIsAuthenticated(true);
       setIsOrganizer((decodedToken as any).isOrganizer);
     }
@@ -32,8 +29,25 @@ export default function RootLayout() {
     checkToken();
   }, []);
 
+
   if (!isReady) {
     return <ActivityIndicator color={COLORS.primary} />;
+  //  return (
+   //   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.backgroundn }}>
+    //    <ActivityIndicator color={COLORS.primary} />
+    //    <Pressable 
+    //      onPress={clearToken}
+    //      style={{ 
+    //      marginTop: 20, 
+    //         backgroundColor: COLORS.primary, 
+    //         padding: 10, 
+    //         borderRadius: 5 
+    //       }}
+    //     >
+    //       <Text style={{ color: COLORS.backgroundn }}>Clear Token (Debug)</Text>
+    //     </Pressable>
+    //   </View>
+    // );
   }
   return (
     <QueryClientProvider client={queryClient}>

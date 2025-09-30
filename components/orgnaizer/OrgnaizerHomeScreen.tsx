@@ -1,20 +1,20 @@
 // app/OrgnaizerHomeScreen.tsx
 import { fetchEventsApi } from "@/api/events"; // <-- adjust path if needed
 import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
+    FontAwesome5,
+    Ionicons,
+    MaterialCommunityIcons,
+    MaterialIcons,
 } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Image,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -34,7 +34,8 @@ const colors = {
 type EventDoc = {
   _id: string;
   title: string;
-  description: string;
+  desc: string;
+  description?: string;
   image: string;
   date: string;
   time: string;
@@ -171,7 +172,7 @@ const OrgnaizerHomeScreen = () => {
                     {ev.title}
                   </Text>
                   <Text style={styles.eventDesc} numberOfLines={3}>
-                    {ev.description}
+                    {ev.description || ev.desc}
                   </Text>
                   <View style={styles.metaRow}>
                     <MaterialIcons
