@@ -1,0 +1,554 @@
+// app/create-event.tsx
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
+import React, { useState } from "react";
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { createEventApi } from "@/api/events"; // <-- API
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+// If you need token directly, your axios instance already injects it.
+
+const colors = {
+  bg: "#0F1115",
+  surface: "#151922",
+  surfaceAlt: "#10151C",
+  border: "#1E2430",
+  primary: "#2EA6A6",
+  text: "#E8EAED",
+  muted: "#A6AFBD",
+  heading: "#F4F7FA",
+};
+
+type PickerMode = "none" | "date" | "time";
+
+function formatDate(d: Date | null) {
+  if (!d) return "";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+function formatTime(d: Date | null) {
+  if (!d) return "";
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${String(h).padStart(2, "0")}:${m} ${ampm}`;
+}
+function parseLngLat(text: string): [number, number] | null {
+  const parts = text.split(",").map((s) => Number(s.trim()));
+  if (parts.length !== 2 || !parts.every((n) => Number.isFinite(n)))
+    return null;
+  const [a, b] = parts;
+  const looksLatLng = Math.abs(a) <= 90 && Math.abs(b) <= 180;
+  return looksLatLng
+    ? ([b, a] as [number, number])
+    : ([a, b] as [number, number]); // returns [lng, lat]
+}
+
+export default function CreateEventScreen() {
+  // ----- FORM STATE -----
+  const [title, setTitle] = useState("");
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [locationText, setLocationText] = useState(""); // "29.3759, 47.9774" or "47.9774, 29.3759"
+  const [description, setDescription] = useState("");
+  const [duration, setDuration] = useState("2h");
+  const [contact, setContact] = useState(""); // not sent to backend (for later)
+
+  const [date, setDate] = useState<Date | null>(null);
+  const [time, setTime] = useState<Date | null>(null);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
+  // ----- DATE/TIME MODAL -----
+  const [pickerMode, setPickerMode] = useState<PickerMode>("none");
+  const [tempDate, setTempDate] = useState<Date>(new Date());
+  const isPickerOpen = pickerMode !== "none";
+
+  const openDate = () => {
+    setPickerMode("date");
+    setTempDate(date ?? new Date());
+  };
+  const openTime = () => {
+    setPickerMode("time");
+    const base = new Date();
+    if (time) {
+      base.setHours(time.getHours());
+      base.setMinutes(time.getMinutes());
+    }
+    setTempDate(base);
+  };
+  const cancelPicker = () => setPickerMode("none");
+  const confirmPicker = () => {
+    if (pickerMode === "date") setDate(tempDate);
+    if (pickerMode === "time") setTime(tempDate);
+    setPickerMode("none");
+  };
+  const onTempChange = (_e: DateTimePickerEvent, selected?: Date) => {
+    if (selected) setTempDate(selected);
+  };
+
+  // ----- IMAGE PICKER -----
+  const pickImage = async () => {
+    setPickerMode("none");
+
+    // Ask for permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Please allow photo library access.");
+      return;
+    }
+
+    // Open library
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // only images
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.9,
+    });
+
+    // Expo SDK >= 48 uses `canceled`, not `cancelled`
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const removeImage = () => setImageUri(null);
+
+  // ----- SUBMIT -----
+  const onPublish = async () => {
+    try {
+      if (!title || !description || !date || !time || !duration) {
+        Alert.alert(
+          "Missing fields",
+          "Please fill title, description, date, time and duration."
+        );
+        return;
+      }
+      const coords = parseLngLat(locationText);
+      if (!coords) {
+        Alert.alert(
+          "Location format",
+          "Enter location as 'lat, lng' or 'lng, lat'."
+        );
+        return;
+      }
+
+      await createEventApi({
+        title,
+        description,
+        image: imageUri ?? "", // backend expects string
+        location: coords, // [lng, lat]
+        date: date.toISOString(), // controller accepts string
+        time: formatTime(time), // "6:00 PM"
+        duration, // REQUIRED by schema
+        categoryId, // optional
+      });
+
+      Alert.alert("Success", "Event created.");
+      // Quick reset
+      setTitle("");
+      setDescription("");
+      setImageUri(null);
+      setLocationText("");
+      setDate(null);
+      setTime(null);
+    } catch (err: any) {
+      Alert.alert(
+        "Error",
+        err?.response?.data?.message ?? "Could not create event"
+      );
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <StatusBar barStyle="light-content" />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          contentInsetAdjustmentBehavior="always"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.topSpace}>
+            <Text style={styles.headerTitle}>Create Event</Text>
+            <Text style={styles.headerSub}>
+              Share your event with community
+            </Text>
+          </View>
+
+          {/* Upload / Preview */}
+          {imageUri ? (
+            <View
+              style={[styles.uploadBox, { padding: 0, overflow: "hidden" }]}
+            >
+              <Image source={{ uri: imageUri }} style={styles.previewImg} />
+              <View style={styles.previewActions}>
+                <TouchableOpacity style={styles.previewBtn} onPress={pickImage}>
+                  <Ionicons name="images" size={16} color={colors.text} />
+                  <Text style={styles.previewBtnText}>Change</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.previewBtn}
+                  onPress={removeImage}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={16}
+                    color={colors.text}
+                  />
+                  <Text style={styles.previewBtnText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.uploadBox}
+              activeOpacity={0.85}
+              onPress={pickImage}
+            >
+              <MaterialCommunityIcons
+                name="image-outline"
+                size={30}
+                color={colors.muted}
+              />
+              <Text style={styles.uploadText}>Tap to add event photo</Text>
+              <Text style={styles.uploadHint}>No size limit</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Form */}
+          <View style={styles.form}>
+            <Label text="Event Title" />
+            <View style={styles.inputWrap}>
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter event title..."
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+              />
+            </View>
+
+            <Label text="Category (optional id)" />
+            <View style={styles.inputWrap}>
+              <TextInput
+                value={categoryId}
+                onChangeText={setCategoryId}
+                placeholder="Enter categoryId (optional)"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+              />
+              <Ionicons name="chevron-down" size={18} color={colors.muted} />
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Label text="Date" />
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={openDate}
+                  style={styles.inputWrap}
+                >
+                  <Text
+                    style={[
+                      styles.inputText,
+                      { color: date ? colors.text : colors.muted },
+                    ]}
+                  >
+                    {date ? formatDate(date) : "dd/mm/yyyy"}
+                  </Text>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={colors.muted}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ width: 12 }} />
+
+              <View style={{ flex: 1 }}>
+                <Label text="Time" />
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={openTime}
+                  style={styles.inputWrap}
+                >
+                  <Text
+                    style={[
+                      styles.inputText,
+                      { color: time ? colors.text : colors.muted },
+                    ]}
+                  >
+                    {time ? formatTime(time) : "--:-- --"}
+                  </Text>
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={colors.muted}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Label text="Location (coords)" />
+            <View style={styles.inputWrap}>
+              <Ionicons
+                name="location-outline"
+                size={18}
+                color={colors.muted}
+              />
+              <TextInput
+                value={locationText}
+                onChangeText={setLocationText}
+                placeholder="lat, lng  (or  lng, lat)"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+              />
+            </View>
+
+            <Label text="Duration" />
+            <View style={styles.inputWrap}>
+              <Ionicons name="timer-outline" size={18} color={colors.muted} />
+              <TextInput
+                value={duration}
+                onChangeText={setDuration}
+                placeholder="e.g. 2h"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+              />
+            </View>
+
+            <Label text="Description" />
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Describe your event..."
+              placeholderTextColor={colors.muted}
+              style={[
+                styles.inputWrap,
+                { height: 110, textAlignVertical: "top" },
+              ]}
+              multiline
+            />
+          </View>
+
+          {/* Publish */}
+          <TouchableOpacity
+            style={styles.publishBtn}
+            activeOpacity={0.9}
+            onPress={onPublish}
+          >
+            <Ionicons name="checkmark" size={18} color="#fff" />
+            <Text style={styles.publishText}>Publish Event</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Bottom bar (static) */}
+      <View style={styles.bottomBar}>
+        <View style={styles.tabItem}>
+          <Ionicons name="home" size={16} color={colors.text} />
+          <Text style={styles.tabText}>Home</Text>
+        </View>
+        <View style={styles.tabItem}>
+          <Ionicons name="ellipsis-horizontal" size={16} color={colors.muted} />
+          <Text style={[styles.tabText, { color: colors.muted }]}>More</Text>
+        </View>
+      </View>
+
+      {/* Centered Date/Time Modal */}
+      <Modal
+        transparent
+        visible={isPickerOpen}
+        animationType="fade"
+        onRequestClose={cancelPicker}
+      >
+        <Pressable style={styles.overlay} onPress={cancelPicker} />
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>
+            {pickerMode === "date" ? "Select Date" : "Select Time"}
+          </Text>
+          <DateTimePicker
+            value={tempDate}
+            mode={pickerMode === "date" ? "date" : "time"}
+            display="spinner"
+            onChange={onTempChange}
+            themeVariant="dark"
+            minuteInterval={1}
+            is24Hour={false}
+            style={{ alignSelf: "stretch" }}
+          />
+          <View style={styles.modalActions}>
+            <TouchableOpacity onPress={cancelPicker} style={styles.btnGhost}>
+              <Text style={styles.btnGhostText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={confirmPicker} style={styles.btnPrimary}>
+              <Text style={styles.btnPrimaryText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const Label = ({ text }: { text: string }) => (
+  <Text style={styles.label}>{text}</Text>
+);
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
+  topSpace: { paddingTop: 6, paddingHorizontal: 16, paddingBottom: 8 },
+  headerTitle: { color: colors.heading, fontSize: 18, fontWeight: "800" },
+  headerSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
+
+  uploadBox: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 22,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    backgroundColor: colors.surfaceAlt,
+  },
+  uploadText: { color: colors.muted, marginTop: 8 },
+  uploadHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  previewImg: { width: "100%", height: 180, resizeMode: "cover" },
+  previewActions: {
+    position: "absolute",
+    right: 10,
+    bottom: 10,
+    flexDirection: "row",
+    gap: 8,
+  },
+  previewBtn: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#000",
+  },
+  previewBtnText: { color: colors.text, fontWeight: "700", fontSize: 12 },
+
+  form: { paddingHorizontal: 16 },
+  label: {
+    color: colors.text,
+    fontWeight: "800",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    height: 50,
+  },
+  input: { flex: 1, color: colors.text, fontSize: 14 },
+  inputText: { flex: 1, fontSize: 14 },
+  row: { flexDirection: "row", marginTop: 2 },
+
+  publishBtn: {
+    marginHorizontal: 16,
+    marginTop: 22,
+    marginBottom: 16,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  publishText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 64,
+    backgroundColor: colors.surfaceAlt,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabItem: { alignItems: "center", gap: 4 },
+  tabText: { color: colors.text, fontSize: 12 },
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  modalCard: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -160 }, { translateY: -180 }],
+    width: 320,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14,
+  },
+  modalTitle: {
+    color: colors.heading,
+    fontWeight: "800",
+    fontSize: 16,
+    marginBottom: 6,
+  },
+  modalActions: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  btnGhost: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  btnGhostText: { color: colors.muted, fontWeight: "700" },
+  btnPrimary: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+  },
+  btnPrimaryText: { color: "#0B1416", fontWeight: "900" },
+});
