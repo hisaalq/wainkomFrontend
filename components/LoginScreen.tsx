@@ -1,11 +1,15 @@
 import { login } from '@/api/auth';
+import { storeToken } from '@/api/storage';
 import { COLORS } from '@/assets/style/color';
 import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
-import { Link, router } from 'expo-router';
-import { useState } from 'react';
+import AuthContext from '@/context/authcontext';
+import { Link } from 'expo-router';
+import { jwtDecode } from 'jwt-decode';
+import { useContext, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
+    const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -17,9 +21,15 @@ export default function LoginScreen() {
         }
         try {
             setLoading(true);
-            await login({ email, password });
-            router.replace('/');
+            const data = await login({ email, password });
+            storeToken(data.token);
+            try {
+                const decoded: any = jwtDecode(data.token);
+                setIsOrganizer(Boolean(decoded?.isOrganizer));
+            } catch {}
+            setIsAuthenticated(true);
         } catch (err: any) {
+            console.log("err", err);
             const msg = err?.response?.data?.msg || err?.response?.data?.message || 'Login failed';
             Alert.alert('Error', String(msg));
         } finally {
@@ -59,7 +69,7 @@ export default function LoginScreen() {
 
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12 }}>
                 <Text style={TYPO.muted}>Don't have an account? </Text>
-                <Link href="/(auth)/signup" style={TYPO.link}>Sign Up</Link>
+                <Link href="/signup" style={TYPO.link}>Sign Up</Link>
             </View>
         </View>
     );
