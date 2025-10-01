@@ -1,20 +1,21 @@
 // app/OrgnaizerHomeScreen.tsx
 import { fetchEventsApi } from "@/api/events"; // <-- adjust path if needed
 import {
-    FontAwesome5,
-    Ionicons,
-    MaterialCommunityIcons,
-    MaterialIcons,
+  FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
 } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Image,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -209,7 +210,7 @@ const OrgnaizerHomeScreen = () => {
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <View style={styles.ctaCard}>
             <View style={styles.ctaCircle}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/createnewevent")}>
                 <Ionicons name="add" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
