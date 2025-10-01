@@ -1,6 +1,7 @@
 import axios from "axios";
 import instance from ".";
 export interface EventItem {
+  categoryId: string;
   _id: string;
   title: string;
   desc: string;
@@ -12,16 +13,16 @@ export interface EventItem {
   rating: number;
 }
 
-const BASE_URL = "http://192.168.7.245:8000/api"; // تأكد إنه صحيح
+const BASE_URL = "http://192.168.7.245:8000/api"; 
 
 export const fetchEvents = async (): Promise<EventItem[]> => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/events`);
+    const { data } = await axios.get(`${BASE_URL}/events/`);
     console.log("✅ fetchEvents response:", data);
-    return data || []; // لازم يرجع array حتى لو فاضي
+    return data || []; 
   } catch (err) {
     console.error("❌ fetchEvents error:", err);
-    return []; // عشان ما يرجع undefined
+    return []; 
   }
 };
 
@@ -36,7 +37,7 @@ export const fetchEventById = async (id: string): Promise<EventItem> => {
   }
 };
 
-=======
+
 // app/api/events.ts
 import api from "./index"; // your axios instance (with getToken interceptor)
 

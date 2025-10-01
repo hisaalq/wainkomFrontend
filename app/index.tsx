@@ -11,7 +11,7 @@ export default function App() {
   );
 }
 
-export default function Index() {
+// export default function Index() {
   
-  return <OrgnaizerHomeScreen />
-}
+//   return <OrgnaizerHomeScreen />
+// }

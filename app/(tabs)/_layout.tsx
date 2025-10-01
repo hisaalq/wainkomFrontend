@@ -1,42 +1,63 @@
-import { COLORS } from '@/assets/style/color';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { COLORS } from "@/assets/style/color";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 
 const TabsLayout = () => {
-
   return (
-      <Tabs screenOptions={{
-        headerStyle: { backgroundColor:COLORS.backgroundd },
+    <Tabs
+      screenOptions={{
+        headerStyle: { backgroundColor: COLORS.backgroundd },
         headerTintColor: COLORS.primary,
-        tabBarStyle: { backgroundColor:COLORS.backgroundd },
+        tabBarStyle: { backgroundColor: COLORS.backgroundd },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.quaternary,
-        headerShadowVisible: false,}}>
+        headerShadowVisible: false,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="home" color={color} size={size} />
+          ),
+        }}
+      />
 
-        <Tabs.Screen name="index" 
-        options={{ title: "Home", 
-        tabBarIcon: ({ color, size }) => 
-        <MaterialCommunityIcons name="home" color={color} size={size} /> 
-        }} />
+      <Tabs.Screen
+        name="events"
+        options={{
+          title: "Events",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="calendar" color={color} size={size} />
+          ),
+        }}
+      />
 
-        <Tabs.Screen name="events" 
-        options={{ title: "Events", 
-        tabBarIcon: ({ color, size }) => 
-        <MaterialCommunityIcons name="calendar" color={color} size={size} />
-        }} />
+      <Tabs.Screen
+        name="routes"
+        options={{
+          title: "Routes",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="map-marker"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
 
-        <Tabs.Screen name="routes" 
-        options={{ title: "Routes", 
-        tabBarIcon: ({ color, size }) => 
-        <MaterialCommunityIcons name="map-marker" color={color} size={size} /> 
-        }} />
-
-        <Tabs.Screen name="settings" 
-        options={{ title: "Settings", 
-        tabBarIcon: ({ color, size }) => 
-        <MaterialCommunityIcons name="cog" color={color} size={size} /> 
-        }} />
-      </Tabs>
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="cog" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 };
 

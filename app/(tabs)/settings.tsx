@@ -1,9 +1,9 @@
-import { Text, View } from "react-native";
+import { View, Text } from "react-native";
 
-export default function Settings() {
-    return (
-        <View>
-            <Text>Settings</Text>
-        </View>
-    )
+export default function ProfileScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text style={{ fontSize: 20 }}>👤 Profile</Text>
+    </View>
+  );
 }

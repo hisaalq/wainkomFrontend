@@ -1,9 +1,9 @@
-import { Text, View } from "react-native";
-// app/index.tsx
-import EventsHeader from "../../components/EventsHeader";
+import { View, Text } from "react-native";
 
-
-
-export default function Index() {
-  return <Text>hi</Text>
+export default function HomeScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text style={{ fontSize: 20 }}>🏠 Welcome Home</Text>
+    </View>
+  );
 }
