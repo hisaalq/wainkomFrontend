@@ -16,11 +16,13 @@ export default function RootLayout() {
 
   const checkToken = async () => {
     const token = await getToken();
-
+    console.log("token", token);
     if (token) {
       const decodedToken = jwtDecode(token);
+      console.log("decodedToken", decodedToken);
       setIsAuthenticated(true);
       setIsOrganizer((decodedToken as any).isOrganizer);
+      console.log("isOrganizer", isOrganizer);
     }
     setIsReady(true);
 
@@ -38,9 +40,7 @@ export default function RootLayout() {
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, isOrganizer, setIsOrganizer }}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Protected guard={isAuthenticated}>
-            <Stack screenOptions={{ headerShown: false }}>
               { isOrganizer ? <Stack.Screen name="organizer" /> : <Stack.Screen name="user" /> }
-            </Stack>
           </Stack.Protected>
           <Stack.Protected guard={!isAuthenticated}><Stack.Screen name="(auth)" /></Stack.Protected>
         </Stack>

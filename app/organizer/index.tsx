@@ -1,9 +1,10 @@
-import OrganizerProfile from '@/components/orgnaizer/OrganizerProfile';
-import { View } from 'react-native';
+import OrganizerHomeScreen from '@/components/orgnaizer/OrgnaizerHomeScreen';
+import { Text, View } from 'react-native';
 export default function OrganizerHome() {
   return (
     <View>
-      <OrganizerProfile />
-    </View>
+    <Text>Organizer Home</Text>
+      <OrganizerHomeScreen />
+      </View>
   );
 }
