@@ -1,4 +1,4 @@
-import { deleteToken, getToken } from "@/api/storage";
+import { getToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -32,22 +32,6 @@ export default function RootLayout() {
 
   if (!isReady) {
     return <ActivityIndicator color={COLORS.primary} />;
-  //  return (
-   //   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.backgroundn }}>
-    //    <ActivityIndicator color={COLORS.primary} />
-    //    <Pressable 
-    //      onPress={clearToken}
-    //      style={{ 
-    //      marginTop: 20, 
-    //         backgroundColor: COLORS.primary, 
-    //         padding: 10, 
-    //         borderRadius: 5 
-    //       }}
-    //     >
-    //       <Text style={{ color: COLORS.backgroundn }}>Clear Token (Debug)</Text>
-    //     </Pressable>
-    //   </View>
-    // );
   }
   return (
     <QueryClientProvider client={queryClient}>
@@ -59,7 +43,6 @@ export default function RootLayout() {
             </Stack>
           </Stack.Protected>
           <Stack.Protected guard={!isAuthenticated}><Stack.Screen name="(auth)" /></Stack.Protected>
-          
         </Stack>
       </AuthContext.Provider>
     </QueryClientProvider>
