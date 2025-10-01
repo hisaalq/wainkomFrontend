@@ -2,17 +2,14 @@ import { register } from '@/api/auth';
 import { COLORS } from '@/assets/style/color';
 import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
 import AuthContext from '@/context/authcontext';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Switch, Text, TextInput, View } from 'react-native';
 
-import { storeToken } from '@/api/storage';
-import { jwtDecode } from 'jwt-decode';
-
-
 export default function SignupScreen() {
-    const { setIsAuthenticated, setIsOrganizer: setOrgContext } = useContext(AuthContext);
+    const { setIsAuthenticated } = useContext(AuthContext);
 
+    const router = useRouter();
     const [isOrganizer, setIsOrganizer] = useState(false);
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -32,18 +29,18 @@ export default function SignupScreen() {
      
         try {
             setLoading(true);
-            const data = await register({
-                name: username,
+            console.log("isOrganizer", isOrganizer);
+            const userData = {
+                username,
                 email,
                 password,
                 verifyPassword: confirm,
                 isOrganizer,
-            });
-            storeToken(data.token);
-            try {
-                const decoded: any = jwtDecode(data.token);
-                setIsOrganizer(Boolean(decoded?.isOrganizer));
-            } catch {}
+            }
+            console.log("userData", userData);
+            const data = await register(userData);
+            console.log("data", data);
+            router.replace(isOrganizer ? "/organizer" : "/user");
             setIsAuthenticated(true);
         } catch (err: any) {
             const msg = err?.response?.data?.msg || err?.response?.data?.message || 'Signup failed';
