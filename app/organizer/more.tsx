@@ -1,9 +1,7 @@
-import { Text, View } from 'react-native';
+import OrgnaizerMoreScreen from '@/components/orgnaizer/OrgnaizerMoreScreen';
 
 export default function OrganizerMore() {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Organizer More</Text>
-    </View>
+      <OrgnaizerMoreScreen/>
   );
 }

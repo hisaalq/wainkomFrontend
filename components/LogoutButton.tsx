@@ -1,8 +1,11 @@
 import { deleteToken } from "@/api/storage";
+import { COLORS } from "@/assets/style/color";
+import { signOut } from "@/assets/style/stylesheet";
 import AuthContext from "@/context/authcontext";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useContext } from "react";
-import { Button } from "react-native";
+import { Pressable, Text } from "react-native";
 
 export default function LogoutButton() {
     const {setIsAuthenticated, setIsOrganizer} = useContext(AuthContext);
@@ -19,6 +22,19 @@ export default function LogoutButton() {
     }
     
     return (
-        <Button onPress={logout} title="Logout" />
+        <Pressable
+          android_ripple={{ color: "#ffdddd", foreground: true }}
+          style={({ pressed }) => [
+            signOut.signOut,
+            pressed && {
+              backgroundColor: "#1a1313",
+                borderColor: COLORS.primary,
+            },
+          ]}
+          onPress={logout}
+        >
+          <Ionicons name="log-out-outline" size={20} color={COLORS.primary} />
+          <Text style={signOut.signOutText}>Sign Out</Text>
+        </Pressable>
     )
 }
