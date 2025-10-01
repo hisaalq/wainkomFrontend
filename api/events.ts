@@ -1,5 +1,6 @@
 import instance from ".";
 export interface EventItem {
+  categoryId: string;
   _id: string;
   title: string;
   desc: string;
@@ -15,10 +16,10 @@ export const fetchEvents = async (): Promise<EventItem[]> => {
   try {
     const { data } = await instance.get(`/events`);
     console.log("✅ fetchEvents response:", data);
-    return data || []; // لازم يرجع array حتى لو فاضي
+    return data || []; 
   } catch (err) {
     console.error("❌ fetchEvents error:", err);
-    return []; // عشان ما يرجع undefined
+    return []; 
   }
 };
 
