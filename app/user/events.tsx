@@ -1,4 +1,3 @@
-// app/index.tsx
 import EventsHeader from "../../components/EventsHeader";
 
 

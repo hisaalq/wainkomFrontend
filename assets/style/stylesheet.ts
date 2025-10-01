@@ -82,3 +82,23 @@ export const BUTTONS = StyleSheet.create({
   },
   ghostText: { color: COLORS.backgroundn, fontWeight: '600' },
 });
+
+export const signOut = StyleSheet.create({
+  signOut: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: COLORS.backgroundd,
+  paddingVertical: 14,
+  borderRadius: 12,
+  marginTop: 18,
+  borderWidth: 1,
+  borderColor: COLORS.quaternary,
+},
+signOutText: {
+  color: COLORS.primary,
+  fontSize: 16,
+  fontWeight: "700",
+  marginLeft: 8,
+},
+});
