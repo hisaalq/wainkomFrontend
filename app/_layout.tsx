@@ -1,75 +1,50 @@
-// import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// import { Stack } from "expo-router";
-
-// const queryClient = new QueryClient();
-
-// export default function RootLayout() {
-//   return (
-//     <QueryClientProvider client={queryClient}>
-//       <Stack screenOptions={{ headerShown: false }} />
-//     </QueryClientProvider>
-//   );
-// }/
+import { getToken } from "@/api/storage";
+import { COLORS } from "@/assets/style/color";
+import AuthContext from "@/context/authcontext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { View, Text } from "react-native";
+import { Stack } from "expo-router";
+import { jwtDecode } from "jwt-decode";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  const checkToken = async () => {
+    const token = await getToken();
+
+    if (token) {
+      const decodedToken = jwtDecode(token);
+      setIsAuthenticated(true);
+      setIsOrganizer((decodedToken as any).isOrganizer);
+    }
+    setIsReady(true);
+
+  };
+  useEffect(() => {
+    checkToken();
+  }, []);
+
+
+  if (!isReady) {
+    return <ActivityIndicator color={COLORS.primary} />;
+  }
   return (
     <QueryClientProvider client={queryClient}>
-      <Tabs
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ color, size, focused }) => {
-            let iconName: keyof typeof Ionicons.glyphMap = "home";
-
-            if (route.name === "home") iconName = "home";
-            else if (route.name === "events") iconName = "calendar";
-            else if (route.name === "settings") iconName = "settings";
-
-            return (
-              <View style={{ alignItems: "center" }}>
-                <Ionicons
-                  name={iconName}
-                  size={focused ? size + 6 : size}
-                  color={focused ? "#00d4ff" : color}
-                />
-                {focused && (
-                  <Text style={{ color: "#00d4ff", fontSize: 12, marginTop: 2 }}>
-                    {route.name === "home"
-                      ? "Home"
-                      : route.name === "events"
-                      ? "Events"
-                      : "Settings"}
-                  </Text>
-                )}
-              </View>
-            );
-          },
-          tabBarStyle: {
-            backgroundColor: "#1e1e1e",
-            borderTopWidth: 0,
-            height: 70,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            overflow: "hidden",
-          },
-          tabBarActiveTintColor: "#00d4ff",
-          tabBarInactiveTintColor: "#888",
-          headerShown: false,
-        })}
-      >
-        {/* 🔹 حدد الصفحات التي تظهر في التاب فقط */}
-        <Tabs.Screen name="home" />
-        <Tabs.Screen name="events" />
-        <Tabs.Screen name="settings" />
-      </Tabs>
+      <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, isOrganizer, setIsOrganizer }}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Protected guard={isAuthenticated}>
+            <Stack screenOptions={{ headerShown: false }}>
+              { isOrganizer ? <Stack.Screen name="organizer" /> : <Stack.Screen name="user" /> }
+            </Stack>
+          </Stack.Protected>
+          <Stack.Protected guard={!isAuthenticated}><Stack.Screen name="(auth)" /></Stack.Protected>
+        </Stack>
+      </AuthContext.Provider>
     </QueryClientProvider>
   );
 }

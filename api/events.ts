@@ -1,4 +1,3 @@
-import axios from "axios";
 import instance from ".";
 export interface EventItem {
   categoryId: string;
@@ -13,11 +12,9 @@ export interface EventItem {
   rating: number;
 }
 
-const BASE_URL = "http://192.168.7.245:8000/api"; 
-
 export const fetchEvents = async (): Promise<EventItem[]> => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/events/`);
+    const { data } = await instance.get(`/events`);
     console.log("✅ fetchEvents response:", data);
     return data || []; 
   } catch (err) {
@@ -28,7 +25,7 @@ export const fetchEvents = async (): Promise<EventItem[]> => {
 
 export const fetchEventById = async (id: string): Promise<EventItem> => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/events/${id}`);
+    const { data } = await instance.get(`/events/${id}`);
     console.log("✅ fetchEventById response:", data);
     return data;
   } catch (err) {
@@ -36,13 +33,6 @@ export const fetchEventById = async (id: string): Promise<EventItem> => {
     throw err;
   }
 };
-
-
-// app/api/events.ts
-import api from "./index"; // your axios instance (with getToken interceptor)
-
-// Adjust this prefix to how you mount on the server (see backend section).
-const BASE = "/api/events";
 
 export type CreateEventBody = {
   title: string;
@@ -56,12 +46,12 @@ export type CreateEventBody = {
 };
 
 export async function createEventApi(body: CreateEventBody) {
-  const { data } = await api.post(BASE, body);
+  const { data } = await instance.post("/events", body);
   return data;
 }
 
-export async function fetchEventsApi() {
-  const { data } = await api.get(BASE);
+export async function fetchEventsApi(): Promise<EventItem[]> {
+  const { data } = await instance.get("/events");
   return data;
 }
 
