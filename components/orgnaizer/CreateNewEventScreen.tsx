@@ -1,4 +1,5 @@
 // app/create-event.tsx
+import { BOTTOM_BAR, BUTTONS, FORMS, HEADER, UPLOAD } from "@/assets/style/stylesheet";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -24,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { createEventApi } from "@/api/events"; // <-- API
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
 // If you need token directly, your axios instance already injects it.
 
 const colors = {
@@ -66,6 +68,8 @@ function parseLngLat(text: string): [number, number] | null {
 }
 
 export default function CreateEventScreen() {
+  const router = useRouter();
+  
   // ----- FORM STATE -----
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
@@ -172,6 +176,16 @@ export default function CreateEventScreen() {
       setDate(null);
       setTime(null);
     } catch (err: any) {
+      // Handle 403 with missing organizer fields (for legacy organizers)
+      if (err?.response?.status === 403) {
+        const missing = err?.response?.data?.missing || [];
+        Alert.alert(
+          "Profile incomplete", 
+          `Please complete organizer profile: ${missing.join(", ")}`,
+          [{ text: "Go to Profile", onPress: () => router.push("/organizer/profile") }]
+        );
+        return;
+      }
       Alert.alert(
         "Error",
         err?.response?.data?.message ?? "Could not create event"
@@ -193,26 +207,24 @@ export default function CreateEventScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View style={styles.topSpace}>
-            <Text style={styles.headerTitle}>Create Event</Text>
-            <Text style={styles.headerSub}>
-              Share your event with community
-            </Text>
+          <View style={HEADER.topSpace}>
+            <Text style={HEADER.title}>Create Event</Text>
+            <Text style={HEADER.subtitle}>Share your event with community</Text>
           </View>
 
           {/* Upload / Preview */}
           {imageUri ? (
             <View
-              style={[styles.uploadBox, { padding: 0, overflow: "hidden" }]}
+              style={[UPLOAD.box, { padding: 0, overflow: "hidden" }]}
             >
-              <Image source={{ uri: imageUri }} style={styles.previewImg} />
-              <View style={styles.previewActions}>
-                <TouchableOpacity style={styles.previewBtn} onPress={pickImage}>
+              <Image source={{ uri: imageUri }} style={UPLOAD.previewImg} />
+              <View style={UPLOAD.previewActions}>
+                <TouchableOpacity style={UPLOAD.previewBtn} onPress={pickImage}>
                   <Ionicons name="images" size={16} color={colors.text} />
-                  <Text style={styles.previewBtnText}>Change</Text>
+                  <Text style={UPLOAD.previewBtnText}>Change</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.previewBtn}
+                  style={UPLOAD.previewBtn}
                   onPress={removeImage}
                 >
                   <Ionicons
@@ -220,13 +232,13 @@ export default function CreateEventScreen() {
                     size={16}
                     color={colors.text}
                   />
-                  <Text style={styles.previewBtnText}>Remove</Text>
+                  <Text style={UPLOAD.previewBtnText}>Remove</Text>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.uploadBox}
+              style={UPLOAD.box}
               activeOpacity={0.85}
               onPress={pickImage}
             >
@@ -235,32 +247,32 @@ export default function CreateEventScreen() {
                 size={30}
                 color={colors.muted}
               />
-              <Text style={styles.uploadText}>Tap to add event photo</Text>
-              <Text style={styles.uploadHint}>No size limit</Text>
+              <Text style={UPLOAD.text}>Tap to add event photo</Text>
+              <Text style={UPLOAD.hint}>No size limit</Text>
             </TouchableOpacity>
           )}
 
           {/* Form */}
-          <View style={styles.form}>
+          <View style={{ paddingHorizontal: 16 }}>
             <Label text="Event Title" />
-            <View style={styles.inputWrap}>
+            <View style={FORMS.inputRow}>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Enter event title..."
                 placeholderTextColor={colors.muted}
-                style={styles.input}
+                style={FORMS.inputText}
               />
             </View>
 
             <Label text="Category (optional id)" />
-            <View style={styles.inputWrap}>
+            <View style={FORMS.inputRow}>
               <TextInput
                 value={categoryId}
                 onChangeText={setCategoryId}
                 placeholder="Enter categoryId (optional)"
                 placeholderTextColor={colors.muted}
-                style={styles.input}
+                style={FORMS.inputText}
               />
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
             </View>
@@ -271,13 +283,10 @@ export default function CreateEventScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={openDate}
-                  style={styles.inputWrap}
+                  style={FORMS.inputRow}
                 >
                   <Text
-                    style={[
-                      styles.inputText,
-                      { color: date ? colors.text : colors.muted },
-                    ]}
+                    style={[FORMS.inputText, { color: date ? colors.text : colors.muted }]}
                   >
                     {date ? formatDate(date) : "dd/mm/yyyy"}
                   </Text>
@@ -296,13 +305,10 @@ export default function CreateEventScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={openTime}
-                  style={styles.inputWrap}
+                  style={FORMS.inputRow}
                 >
                   <Text
-                    style={[
-                      styles.inputText,
-                      { color: time ? colors.text : colors.muted },
-                    ]}
+                    style={[FORMS.inputText, { color: time ? colors.text : colors.muted }]}
                   >
                     {time ? formatTime(time) : "--:-- --"}
                   </Text>
@@ -316,7 +322,7 @@ export default function CreateEventScreen() {
             </View>
 
             <Label text="Location (coords)" />
-            <View style={styles.inputWrap}>
+            <View style={FORMS.inputRow}>
               <Ionicons
                 name="location-outline"
                 size={18}
@@ -327,19 +333,19 @@ export default function CreateEventScreen() {
                 onChangeText={setLocationText}
                 placeholder="lat, lng  (or  lng, lat)"
                 placeholderTextColor={colors.muted}
-                style={styles.input}
+                style={FORMS.inputText}
               />
             </View>
 
             <Label text="Duration" />
-            <View style={styles.inputWrap}>
+            <View style={FORMS.inputRow}>
               <Ionicons name="timer-outline" size={18} color={colors.muted} />
               <TextInput
                 value={duration}
                 onChangeText={setDuration}
                 placeholder="e.g. 2h"
                 placeholderTextColor={colors.muted}
-                style={styles.input}
+                style={FORMS.inputText}
               />
             </View>
 
@@ -349,35 +355,32 @@ export default function CreateEventScreen() {
               onChangeText={setDescription}
               placeholder="Describe your event..."
               placeholderTextColor={colors.muted}
-              style={[
-                styles.inputWrap,
-                { height: 110, textAlignVertical: "top" },
-              ]}
+              style={[FORMS.input, { height: 110, textAlignVertical: "top" }]}
               multiline
             />
           </View>
 
           {/* Publish */}
           <TouchableOpacity
-            style={styles.publishBtn}
+            style={BUTTONS.publish}
             activeOpacity={0.9}
             onPress={onPublish}
           >
             <Ionicons name="checkmark" size={18} color="#fff" />
-            <Text style={styles.publishText}>Publish Event</Text>
+            <Text style={BUTTONS.publishText}>Publish Event</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Bottom bar (static) */}
-      <View style={styles.bottomBar}>
-        <View style={styles.tabItem}>
+      <View style={BOTTOM_BAR.bar}>
+        <View style={BOTTOM_BAR.item}>
           <Ionicons name="home" size={16} color={colors.text} />
-          <Text style={styles.tabText}>Home</Text>
+          <Text style={BOTTOM_BAR.text}>Home</Text>
         </View>
-        <View style={styles.tabItem}>
+        <View style={BOTTOM_BAR.item}>
           <Ionicons name="ellipsis-horizontal" size={16} color={colors.muted} />
-          <Text style={[styles.tabText, { color: colors.muted }]}>More</Text>
+          <Text style={[BOTTOM_BAR.text, { color: colors.muted }]}>More</Text>
         </View>
       </View>
 

@@ -1,5 +1,8 @@
 // app/OrgnaizerHomeScreen.tsx
 import { fetchEventsApi } from "@/api/events";
+import { getOrgProfile } from "@/api/organizer";
+import { deleteToken } from "@/api/storage";
+import AuthContext from "@/context/authcontext";
 import {
   FontAwesome5,
   Ionicons,
@@ -7,15 +10,16 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -53,17 +57,67 @@ function formatDateNice(iso: string) {
 }
 
 const OrgnaizerHomeScreen = () => {
+  const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
   const [events, setEvents] = useState<EventDoc[]>([]);
+  const [orgImage, setOrgImage] = useState<string | undefined>(undefined);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            await deleteToken();
+            setIsAuthenticated(false);
+            setIsOrganizer(false);
+            router.replace("/(auth)");
+          },
+        },
+      ]
+    );
+  };
+
+  const loadData = async () => {
+    try {
+      const [eventsData, org] = await Promise.allSettled([
+        fetchEventsApi(),
+        getOrgProfile(),
+      ]);
+
+      if (eventsData.status === "fulfilled") {
+        setEvents(eventsData.value);
+        console.log("Events loaded:", eventsData.value.length);
+      }
+      
+      if (org.status === "fulfilled") {
+        console.log("Organizer profile loaded:", org.value);
+        setOrgImage(org.value?.image);
+      } else {
+        console.log("Failed to load organizer profile:", org.reason);
+      }
+      // No profile gate - organizers created during signup have complete profiles
+    } catch (err) {
+      console.log("Error loading organizer home:", err);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await fetchEventsApi();
-        setEvents(data);
-      } catch (err) {
-        console.log("Error fetching events:", err);
-      }
-    })();
+    loadData();
+  }, []);
+
+  // Refresh data periodically or when component mounts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("Refreshing data...");
+      loadData();
+    }, 5000); // Refresh every 5 seconds for testing
+    
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -82,22 +136,30 @@ const OrgnaizerHomeScreen = () => {
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
-              <TouchableOpacity style={styles.circleBtn}>
+              <TouchableOpacity style={styles.circleBtn} onPress={() => router.push("/createEvent")}>
                 <Ionicons name="add" size={18} color={colors.text} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.circleBtn}>
+              <TouchableOpacity style={styles.circleBtn} onPress={handleLogout}>
                 <Ionicons
-                  name="notifications-outline"
+                  name="log-out-outline"
                   size={18}
                   color={colors.text}
                 />
               </TouchableOpacity>
 
-              <Image
-                source={{ uri: "https://i.pravatar.cc/100?img=11" }}
-                style={styles.avatar}
-              />
+              <TouchableOpacity onPress={() => router.push("/organizer/profile")}>
+                {orgImage ? (
+                  <Image
+                    source={{ uri: orgImage }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={18} color={colors.muted} />
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -265,6 +327,16 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: colors.surface,
+  },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   orgCard: {

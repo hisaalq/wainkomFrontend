@@ -6,4 +6,11 @@ export const COLORS = {
     quinary: "#F2DEC4", // Peach
     backgroundd: "#000000", // Black
     backgroundn: "#ffffff", // White
+    // Extended tokens for consistent UI surfaces
+    surface: "#151922",
+    surfaceAlt: "#10151C",
+    border: "#1E2430",
+    text: "#E8EAED",
+    muted: "#A6AFBD",
+    heading: "#F4F7FA",
 } as const

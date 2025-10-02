@@ -11,7 +11,7 @@ import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'reac
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
+    const { setIsAuthenticated, setIsOrganizer, setOrganizerData } = useContext(AuthContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -28,6 +28,7 @@ export default function LoginScreen() {
             try {
                 const decoded: any = jwtDecode(data.token);
                 setIsOrganizer(Boolean(decoded?.isOrganizer));
+                setOrganizerData(decoded?.organizer || null);
                 router.replace(decoded?.isOrganizer ? "/organizer" : "/user");
             } catch {}
             setIsAuthenticated(true);
