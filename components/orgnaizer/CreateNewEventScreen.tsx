@@ -1,10 +1,16 @@
+
 // app/create-event.tsx
 import { BOTTOM_BAR, BUTTONS, FORMS, HEADER, UPLOAD } from "@/assets/style/stylesheet";
+
+// app/CreateNewEventScreen.tsx
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -27,6 +33,10 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 // If you need token directly, your axios instance already injects it.
+
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { createEventApi } from "@/api/events";
+
 
 const colors = {
   bg: "#0F1115",
@@ -61,26 +71,31 @@ function parseLngLat(text: string): [number, number] | null {
   if (parts.length !== 2 || !parts.every((n) => Number.isFinite(n)))
     return null;
   const [a, b] = parts;
-  const looksLatLng = Math.abs(a) <= 90 && Math.abs(b) <= 180;
-  return looksLatLng
+  // If user typed "lat, lng", flip to [lng, lat]
+  return Math.abs(a) <= 90 && Math.abs(b) <= 180
     ? ([b, a] as [number, number])
-    : ([a, b] as [number, number]); // returns [lng, lat]
+    : ([a, b] as [number, number]);
 }
+
 
 export default function CreateEventScreen() {
   const router = useRouter();
   
+
   // ----- FORM STATE -----
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [locationText, setLocationText] = useState(""); // "29.3759, 47.9774" or "47.9774, 29.3759"
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState("2h");
-  const [contact, setContact] = useState(""); // not sent to backend (for later)
 
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<Date | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
+
+  // Categories
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [catModal, setCatModal] = useState(false);
 
   // ----- DATE/TIME MODAL -----
   const [pickerMode, setPickerMode] = useState<PickerMode>("none");
@@ -113,29 +128,35 @@ export default function CreateEventScreen() {
   // ----- IMAGE PICKER -----
   const pickImage = async () => {
     setPickerMode("none");
-
-    // Ask for permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert("Permission needed", "Please allow photo library access.");
       return;
     }
-
-    // Open library
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // only images
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.9,
     });
-
-    // Expo SDK >= 48 uses `canceled`, not `cancelled`
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setImageUri(result.assets[0].uri);
     }
   };
-
   const removeImage = () => setImageUri(null);
+
+  // ----- LOAD CATEGORIES -----
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await fetchCategories();
+        setCategories(list);
+      } catch (e: any) {
+        console.log("fetchCategories error:", e?.message, e?.response?.data);
+        Alert.alert("Error", "Failed to load categories.");
+      }
+    })();
+  }, []);
 
   // ----- SUBMIT -----
   const onPublish = async () => {
@@ -156,14 +177,20 @@ export default function CreateEventScreen() {
         return;
       }
 
+      // If your backend requires non-empty image string, enforce it:
+      if (!imageUri) {
+        Alert.alert("Image required", "Please add an event image.");
+        return;
+      }
+
       await createEventApi({
         title,
         description,
-        image: imageUri ?? "", // backend expects string
-        location: coords, // [lng, lat]
-        date: date.toISOString(), // controller accepts string
+        image: imageUri, // backend expects a string
+        location: coords, // [lng, lat] — your controller accepts arrays
+        date: date.toISOString(),
         time: formatTime(time), // "6:00 PM"
-        duration, // REQUIRED by schema
+        duration,
         categoryId, // optional
       });
 
@@ -175,7 +202,9 @@ export default function CreateEventScreen() {
       setLocationText("");
       setDate(null);
       setTime(null);
+      setCategoryId(undefined);
     } catch (err: any) {
+
       // Handle 403 with missing organizer fields (for legacy organizers)
       if (err?.response?.status === 403) {
         const missing = err?.response?.data?.missing || [];
@@ -190,6 +219,15 @@ export default function CreateEventScreen() {
         "Error",
         err?.response?.data?.message ?? "Could not create event"
       );
+
+      console.log("createEvent error:", err?.message, err?.response?.data);
+      // Show your backend message if provided (e.g., not organizer)
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Could not create event";
+      Alert.alert("Error", msg);
+
     }
   };
 
@@ -265,6 +303,7 @@ export default function CreateEventScreen() {
               />
             </View>
 
+
             <Label text="Category (optional id)" />
             <View style={FORMS.inputRow}>
               <TextInput
@@ -273,9 +312,14 @@ export default function CreateEventScreen() {
                 placeholder="Enter categoryId (optional)"
                 placeholderTextColor={colors.muted}
                 style={FORMS.inputText}
+
               />
+              <Text style={[styles.input, { paddingVertical: 12 }]}>
+                {categories.find((c) => c._id === categoryId)?.name ??
+                  "Select a category"}
+              </Text>
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -297,9 +341,7 @@ export default function CreateEventScreen() {
                   />
                 </TouchableOpacity>
               </View>
-
               <View style={{ width: 12 }} />
-
               <View style={{ flex: 1 }}>
                 <Label text="Time" />
                 <TouchableOpacity
@@ -383,6 +425,52 @@ export default function CreateEventScreen() {
           <Text style={[BOTTOM_BAR.text, { color: colors.muted }]}>More</Text>
         </View>
       </View>
+
+      {/* Category modal */}
+      <Modal
+        visible={catModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCatModal(false)}
+      >
+        <Pressable style={styles.overlay} onPress={() => setCatModal(false)} />
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Choose Category</Text>
+          <ScrollView style={{ maxHeight: 280 }}>
+            {categories.map((c) => (
+              <TouchableOpacity
+                key={c._id}
+                style={{
+                  paddingVertical: 12,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                }}
+                onPress={() => {
+                  setCategoryId(c._id);
+                  setCatModal(false);
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.text,
+                    fontWeight: c._id === categoryId ? "800" : "600",
+                  }}
+                >
+                  {c.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              onPress={() => setCatModal(false)}
+              style={styles.btnPrimary}
+            >
+              <Text style={styles.btnPrimaryText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Centered Date/Time Modal */}
       <Modal
