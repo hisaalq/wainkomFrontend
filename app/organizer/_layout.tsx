@@ -23,6 +23,11 @@ import { Tabs } from 'expo-router';
           ),
         }}
       />
+      {/* Hide profile from tab bar but keep it routable */}
+      <Tabs.Screen
+        name="profile"
+        options={{ href: null }}
+      />
       <Tabs.Screen
         name="more"
         options={{

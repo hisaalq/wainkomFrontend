@@ -4,7 +4,7 @@ import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
 import AuthContext from '@/context/authcontext';
 import { Link, useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
 export default function SignupScreen() {
     const { setIsAuthenticated } = useContext(AuthContext);
@@ -16,6 +16,31 @@ export default function SignupScreen() {
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [loading, setLoading] = useState(false);
+    
+
+
+    const onContinue = () => {
+        if (!username || !email || !password) {
+            Alert.alert('Missing info', 'Please fill all required fields.');
+            return;
+        }
+        if (password !== confirm) {
+            Alert.alert('Password mismatch', 'Passwords do not match.');
+            return;
+        }
+        
+        // Navigate to organizer profile form
+        router.push({
+            pathname: '/organizerProfileSetup',
+            params: {
+                username,
+                email,
+                password,
+                confirm,
+                isOrganizer: 'true'
+            }
+        });
+    };
 
     const onSignup = async () => {
         if (!username || !email || !password) {
@@ -29,18 +54,18 @@ export default function SignupScreen() {
      
         try {
             setLoading(true);
-            console.log("isOrganizer", isOrganizer);
-            const userData = {
+            const userData: any = {
                 username,
                 email,
                 password,
                 verifyPassword: confirm,
-                isOrganizer,
-            }
-            console.log("userData", userData);
+                isOrganizer: false,
+            };
+            
             const data = await register(userData);
-            console.log("data", data);
-            router.replace(isOrganizer ? "/organizer" : "/user");
+            console.log("Registration response:", data);
+            
+            router.replace("/user");
             setIsAuthenticated(true);
         } catch (err: any) {
             const msg = err?.response?.data?.msg || err?.response?.data?.message || 'Signup failed';
@@ -51,7 +76,7 @@ export default function SignupScreen() {
     };
 
     return (
-        <View style={[LAYOUT.screen, { gap: 14 }]}>
+        <ScrollView style={LAYOUT.screen} contentContainerStyle={{ paddingBottom: 24 }}>
             <View style={{ height: 140, borderRadius: 16, backgroundColor: '#111', marginBottom: 12, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={TYPO.muted}>WainKom Logo</Text>
             </View>
@@ -63,7 +88,7 @@ export default function SignupScreen() {
                 value={username}
                 onChangeText={setUsername}
                 placeholder="Enter your username"
-                placeholderTextColor={COLORS.quaternary}
+                placeholderTextColor={COLORS.muted}
                 style={FORMS.input}
             />
 
@@ -72,7 +97,7 @@ export default function SignupScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
-                placeholderTextColor={COLORS.quaternary}
+                placeholderTextColor={COLORS.muted}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={FORMS.input}
@@ -83,7 +108,7 @@ export default function SignupScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
-                placeholderTextColor={COLORS.quaternary}
+                placeholderTextColor={COLORS.muted}
                 secureTextEntry
                 style={FORMS.input}
             />
@@ -93,7 +118,7 @@ export default function SignupScreen() {
                 value={confirm}
                 onChangeText={setConfirm}
                 placeholder="Confirm your password"
-                placeholderTextColor={COLORS.quaternary}
+                placeholderTextColor={COLORS.muted}
                 secureTextEntry
                 style={FORMS.input}
             />
@@ -103,8 +128,8 @@ export default function SignupScreen() {
                 <Switch value={isOrganizer} onValueChange={setIsOrganizer} trackColor={{ false: '#555', true: COLORS.primary }} thumbColor={isOrganizer ? COLORS.backgroundn : '#f4f3f4'} />
             </View>
 
-            <Pressable disabled={loading} onPress={onSignup} style={[BUTTONS.primary, { marginTop: 12, opacity: loading ? 0.7 : 1 }]}>
-                {loading ? <ActivityIndicator color={COLORS.backgroundn} /> : <Text style={BUTTONS.primaryText}>Sign Up</Text>}
+            <Pressable disabled={loading} onPress={isOrganizer ? onContinue : onSignup} style={[BUTTONS.primary, { marginTop: 12, opacity: loading ? 0.7 : 1 }]}>
+                {loading ? <ActivityIndicator color={COLORS.backgroundn} /> : <Text style={BUTTONS.primaryText}>{isOrganizer ? 'Continue' : 'Sign Up'}</Text>}
             </Pressable>
 
             <View style={{ alignItems: 'center', marginTop: 6 }}>
@@ -112,7 +137,7 @@ export default function SignupScreen() {
                     Already have an account? <Link href="/" style={TYPO.link}>Log In</Link>
                 </Text>
             </View>
-        </View>
+        </ScrollView>
     );
 }
 
