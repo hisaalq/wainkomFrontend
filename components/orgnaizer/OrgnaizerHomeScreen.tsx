@@ -1,5 +1,5 @@
 // app/OrgnaizerHomeScreen.tsx
-import { fetchEventsApi } from "@/api/events"; // <-- adjust path if needed
+import { fetchEventsApi } from "@/api/events";
 import {
   FontAwesome5,
   Ionicons,
@@ -7,7 +7,7 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -67,176 +67,183 @@ const OrgnaizerHomeScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView>
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ===== Top Header ===== */}
-        <View style={styles.topHeader}>
-          <Text style={styles.appTitle}>EventHub Kuwait</Text>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={{ paddingBottom: 16 }} // <= small, no white gap
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ===== Top Header ===== */}
+          <View style={styles.topHeader}>
+            <Text style={styles.appTitle}>EventHub Kuwait</Text>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <TouchableOpacity style={styles.circleBtn}>
-              <Ionicons name="add" size={18} color={colors.text} />
-            </TouchableOpacity>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <TouchableOpacity style={styles.circleBtn}>
+                <Ionicons name="add" size={18} color={colors.text} />
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.circleBtn}>
-              <Ionicons
-                name="notifications-outline"
-                size={18}
-                color={colors.text}
-              />
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.circleBtn}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={18}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
 
-            <Image
-              source={{ uri: "https://i.pravatar.cc/100?img=11" }}
-              style={styles.avatar}
-            />
-          </View>
-        </View>
-
-        {/* ===== Organization Card ===== */}
-        <View style={styles.orgCard}>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <View style={styles.orgLogo}>
-              <MaterialCommunityIcons
-                name="party-popper"
-                size={24}
-                color={colors.primary}
+              <Image
+                source={{ uri: "https://i.pravatar.cc/100?img=11" }}
+                style={styles.avatar}
               />
             </View>
+          </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.orgTitle}>EventHub Kuwait</Text>
-              <Text style={styles.orgType}>Event Management Company</Text>
-
-              <View style={styles.ratingRow}>
-                <FontAwesome5 name="star" size={10} color={colors.rating} />
-                <Text style={styles.ratingNum}>4.9</Text>
-                <Text style={styles.ratingSub}>(1.2k reviews)</Text>
+          {/* ===== Organization Card ===== */}
+          <View style={styles.orgCard}>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={styles.orgLogo}>
+                <MaterialCommunityIcons
+                  name="party-popper"
+                  size={24}
+                  color={colors.primary}
+                />
               </View>
 
-              <Text style={styles.orgDesc}>
-                Kuwait’s premier event management company, creating
-                unforgettable experiences across the region. From corporate
-                events to cultural celebrations, we bring communities together
-                through exceptional events.
+              <View style={{ flex: 1 }}>
+                <Text style={styles.orgTitle}>EventHub Kuwait</Text>
+                <Text style={styles.orgType}>Event Management Company</Text>
+
+                <View style={styles.ratingRow}>
+                  <FontAwesome5 name="star" size={10} color={colors.rating} />
+                  <Text style={styles.ratingNum}>4.9</Text>
+                  <Text style={styles.ratingSub}>(1.2k reviews)</Text>
+                </View>
+
+                <Text style={styles.orgDesc}>
+                  Kuwait’s premier event management company, creating
+                  unforgettable experiences across the region. From corporate
+                  events to cultural celebrations, we bring communities together
+                  through exceptional events.
+                </Text>
+
+                <View style={styles.orgStatsRow}>
+                  <View style={styles.statPill}>
+                    <MaterialIcons name="event" size={14} color={colors.text} />
+                    <Text style={styles.statText}>500+{"  "}Events</Text>
+                  </View>
+                  <View style={styles.statPill}>
+                    <MaterialCommunityIcons
+                      name="account-group"
+                      size={14}
+                      color={colors.text}
+                    />
+                    <Text style={styles.statText}>50k+{"  "}Attendees</Text>
+                  </View>
+
+                  <TouchableOpacity style={styles.followBtn}>
+                    <Text style={styles.followTxt}>Follow</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* ===== Our Events header ===== */}
+          <View style={styles.rowHeader}>
+            <Text style={styles.sectionTitle}>Our Events</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ===== Event Cards ===== */}
+          <View style={{ paddingHorizontal: 16, gap: 12 }}>
+            {events.map((ev) => (
+              <View key={ev._id} style={styles.eventCard}>
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  <Image
+                    source={{
+                      uri: ev.image || "https://placehold.co/300x200/png",
+                    }}
+                    style={styles.thumb}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.eventTitle} numberOfLines={1}>
+                      {ev.title}
+                    </Text>
+                    <Text style={styles.eventDesc} numberOfLines={3}>
+                      {ev.description || ev.desc}
+                    </Text>
+                    <View style={styles.metaRow}>
+                      <MaterialIcons
+                        name="event"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text style={styles.metaTxt}>
+                        {ev.date ? formatDateNice(ev.date) : "—"}
+                      </Text>
+                      <View style={styles.dot} />
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text style={styles.metaTxt}>{ev.time || "—"}</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.bookmarkBtn}>
+                    <MaterialCommunityIcons
+                      name="bookmark-outline"
+                      size={18}
+                      color={colors.muted}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* ===== CTA ===== */}
+          <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+            <View style={styles.ctaCard}>
+              <View style={styles.ctaCircle}>
+                <Ionicons name="add" size={24} color={colors.text} />
+              </View>
+              <Text style={styles.ctaTitle}>Create New Event</Text>
+              <Text style={styles.ctaDesc}>
+                Share your amazing events with the Kuwait community
               </Text>
 
-              <View style={styles.orgStatsRow}>
-                <View style={styles.statPill}>
-                  <MaterialIcons name="event" size={14} color={colors.text} />
-                  <Text style={styles.statText}>500+{"  "}Events</Text>
-                </View>
-                <View style={styles.statPill}>
-                  <MaterialCommunityIcons
-                    name="account-group"
-                    size={14}
-                    color={colors.text}
-                  />
-                  <Text style={styles.statText}>50k+{"  "}Attendees</Text>
-                </View>
-
-                <TouchableOpacity style={styles.followBtn}>
-                  <Text style={styles.followTxt}>Follow</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* ===== Our Events header ===== */}
-        <View style={styles.rowHeader}>
-          <Text style={styles.sectionTitle}>Our Events</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ===== Event Cards ===== */}
-        <View style={{ paddingHorizontal: 16, gap: 12 }}>
-          {events.map((ev) => (
-            <View key={ev._id} style={styles.eventCard}>
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <Image
-                  source={{
-                    uri: ev.image || "https://placehold.co/300x200/png",
-                  }}
-                  style={styles.thumb}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.eventTitle} numberOfLines={1}>
-                    {ev.title}
-                  </Text>
-                  <Text style={styles.eventDesc} numberOfLines={3}>
-                    {ev.description || ev.desc}
-                  </Text>
-                  <View style={styles.metaRow}>
-                    <MaterialIcons
-                      name="event"
-                      size={14}
-                      color={colors.muted}
-                    />
-                    <Text style={styles.metaTxt}>
-                      {ev.date ? formatDateNice(ev.date) : "—"}
-                    </Text>
-                    <View style={styles.dot} />
-                    <Ionicons
-                      name="time-outline"
-                      size={14}
-                      color={colors.muted}
-                    />
-                    <Text style={styles.metaTxt}>{ev.time || "—"}</Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity style={styles.bookmarkBtn}>
-                  <MaterialCommunityIcons
-                    name="bookmark-outline"
-                    size={18}
-                    color={colors.muted}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* ===== CTA ===== */}
-        <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <View style={styles.ctaCard}>
-            <View style={styles.ctaCircle}>
-              <TouchableOpacity onPress={() => router.push("/createnewevent")}>
-                <Ionicons name="add" size={24} color={colors.text} />
+              <TouchableOpacity
+                style={styles.ctaBtn}
+                onPress={() => {
+                  router.push("/createEvent");
+                }}
+              >
+                <Text style={styles.ctaBtnTxt}>Get Started</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.ctaTitle}>Create New Event</Text>
-            <Text style={styles.ctaDesc}>
-              Share your amazing events with the Kuwait community
-            </Text>
-
-            <TouchableOpacity style={styles.ctaBtn}>
-              <Text style={styles.ctaBtnTxt}>Get Started</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
 
-// ===== Styles (same as your original) =====
+// ===== Styles =====
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.bg },
   container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1, backgroundColor: colors.bg },
 
   topHeader: {
     paddingHorizontal: 16,
-    paddingTop: 18,
+    paddingTop: 10,
     paddingBottom: 10,
     flexDirection: "row",
     alignItems: "center",
@@ -322,7 +329,7 @@ const styles = StyleSheet.create({
 
   rowHeader: {
     paddingHorizontal: 16,
-    marginTop: 18,
+    marginTop: 16,
     marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",

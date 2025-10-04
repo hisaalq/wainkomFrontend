@@ -9,9 +9,19 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.wainkom.frontend",
+      "config": {
+        "googleMapsApiKey": "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ"
+      },
       "supportsTablet": true
     },
     "android": {
+      "package": "com.wainkom.frontend",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
