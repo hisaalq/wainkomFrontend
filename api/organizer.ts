@@ -1,15 +1,35 @@
 import { OrganizerInfo } from "@/types/OrganizerInfo";
 import instance from ".";
 
+export type OrganizerCreatePayload = {
+  name: string;
+  address: string;
+  image: string;
+  phone: string;
+  email: string;
+  bio?: string;
+  website?: string;
+};
+
 export const getOrgProfile = async () => {
-  const { data } = await instance.get<OrganizerInfo>("/organizer/my-profile");
+  try {
+    const { data } = await instance.get<OrganizerInfo>("/organizer/my-profile");
+    return data;
+  } catch (error: any) {
+    console.log("getOrgProfile error:", error?.response?.status, error?.response?.data);
+    throw error;
+  }
+};
+
+export const createOrganizerProfile = async (payload: OrganizerCreatePayload) => {
+  const { data } = await instance.post<OrganizerInfo>("/organizer", payload);
   return data;
 };
 
-
-export const updateOrganizerInfo = async (organizerInfo: OrganizerInfo) => {
-  const { data } = await instance.put<OrganizerInfo>("/organizer/${id}", organizerInfo);
-  return data;
-};
+export function isOrganizerProfileComplete(org?: Partial<OrganizerCreatePayload> | null): boolean {
+  if (!org) return false;
+  const required = ["name", "address", "image", "phone", "email"] as const;
+  return required.every((k) => !!(org as any)[k]);
+}
 
 

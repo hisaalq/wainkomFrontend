@@ -29,26 +29,40 @@ export const LAYOUT = StyleSheet.create({
   rowCenter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   gapSm: { rowGap: SPACING.sm, columnGap: SPACING.sm },
   gapMd: { rowGap: SPACING.md, columnGap: SPACING.md },
+  container: { flex: 1, paddingHorizontal: SPACING.lg, backgroundColor: COLORS.backgroundd },
+  surface: { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: RADIUS.md },
+  surfaceAlt: { backgroundColor: COLORS.surfaceAlt, borderColor: COLORS.border, borderWidth: 1, borderRadius: RADIUS.md },
 });
 
 export const FORMS = StyleSheet.create({
-  label: { color: COLORS.backgroundn, marginTop: SPACING.sm },
+  label: { color: COLORS.backgroundn, marginTop: SPACING.sm, marginBottom: SPACING.xs },
   input: {
     color: COLORS.backgroundn,
-    borderColor: COLORS.quaternary,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: RADIUS.md,
     padding: SPACING.md,
   },
-  placeholder: { color: COLORS.quaternary },
+  placeholder: { color: COLORS.muted },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.md,
+    height: 50,
+  },
+  inputText: { flex: 1, color: COLORS.text, fontSize: 14 },
   segmentedWrap: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    backgroundColor: '#111',
+    backgroundColor: COLORS.surfaceAlt,
     padding: SPACING.sm,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: COLORS.border,
   },
   segmentedItem: {
     flex: 1,
@@ -73,6 +87,15 @@ export const BUTTONS = StyleSheet.create({
     alignItems: 'center',
   },
   primaryText: { color: COLORS.backgroundn, fontWeight: '700' },
+  secondary: {
+    backgroundColor: 'transparent',
+    padding: SPACING.md + 2,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  secondaryText: { color: COLORS.backgroundn, fontWeight: '600' },
   ghost: {
     padding: SPACING.md,
     borderRadius: RADIUS.md,
@@ -81,6 +104,17 @@ export const BUTTONS = StyleSheet.create({
     alignItems: 'center',
   },
   ghostText: { color: COLORS.backgroundn, fontWeight: '600' },
+  publish: {
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.lg,
+    paddingVertical: SPACING.lg,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  publishText: { color: '#fff', fontWeight: '900' },
 });
 
 export const signOut = StyleSheet.create({
@@ -101,4 +135,48 @@ signOutText: {
   fontWeight: "700",
   marginLeft: 8,
 },
+});
+
+export const HEADER = StyleSheet.create({
+  topSpace: { paddingTop: 6, paddingHorizontal: 16, paddingBottom: 8 },
+  title: { color: COLORS.heading, fontSize: 18, fontWeight: '800' },
+  subtitle: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
+});
+
+export const UPLOAD = StyleSheet.create({
+  box: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingVertical: 22,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceAlt,
+  },
+  text: { color: COLORS.muted, marginTop: 8 },
+  hint: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
+  previewImg: { width: '100%', height: 180 },
+  previewActions: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', columnGap: 8 },
+  previewBtn: { backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', columnGap: 6, borderWidth: 1, borderColor: '#000' },
+  previewBtnText: { color: COLORS.text, fontWeight: '700', fontSize: 12 },
+});
+
+export const BOTTOM_BAR = StyleSheet.create({
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 64, backgroundColor: COLORS.surfaceAlt, borderTopWidth: 1, borderTopColor: COLORS.border, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  item: { alignItems: 'center', rowGap: 4 },
+  text: { color: COLORS.text, fontSize: 12 },
+});
+
+export const MODAL = StyleSheet.create({
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  card: { position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -160 }, { translateY: -180 }], width: 320, backgroundColor: COLORS.surfaceAlt, borderWidth: 1, borderColor: COLORS.border, borderRadius: 16, padding: 14 },
+  title: { color: COLORS.heading, fontWeight: '800', fontSize: 16, marginBottom: 6 },
+  actions: { marginTop: 8, flexDirection: 'row', justifyContent: 'flex-end', columnGap: 10 },
+  btnGhost: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  btnGhostText: { color: COLORS.muted, fontWeight: '700' },
+  btnPrimary: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.primary },
+  btnPrimaryText: { color: '#0B1416', fontWeight: '900' },
 });
