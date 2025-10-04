@@ -7,10 +7,10 @@ import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 export default function Routes() {
   const mapRef = useRef<MapView>(null);
   const [region, setRegion] = useState<Region>({
-    latitude: 29.3759,      // Kuwait City default
+    latitude: 29.3759, // Kuwait City default
     longitude: 47.9774,
     latitudeDelta: 0.08,
-    longitudeDelta: 0.08
+    longitudeDelta: 0.08,
   });
   const [events, setEvents] = useState<
     { id: string; title: string; coordinates: [number, number] }[]
@@ -21,10 +21,10 @@ export default function Routes() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
         const loc = await Location.getCurrentPositionAsync({});
-        setRegion(r => ({
+        setRegion((r) => ({
           ...r,
           latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude
+          longitude: loc.coords.longitude,
         }));
       }
     })();
@@ -34,16 +34,18 @@ export default function Routes() {
 
   return (
     <View style={{ flex: 1 }}>
-        <PlaceSearch onPick={({ lat, lng }) => {
-            const next = {
-                latitude: lat,
-                longitude: lng,
-                latitudeDelta: 0.03,
-                longitudeDelta: 0.03,
-            };
-            setRegion(next);
-            mapRef.current?.animateToRegion(next, 600);
-          }} />
+      <PlaceSearch
+        onPick={({ lat, lng }) => {
+          const next = {
+            latitude: lat,
+            longitude: lng,
+            latitudeDelta: 0.03,
+            longitudeDelta: 0.03,
+          };
+          setRegion(next);
+          mapRef.current?.animateToRegion(next, 600);
+        }}
+      />
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
@@ -57,7 +59,10 @@ export default function Routes() {
           <Marker
             key={e.id}
             title={e.title}
-            coordinate={{ latitude: e.coordinates[1], longitude: e.coordinates[0] }}
+            coordinate={{
+              latitude: e.coordinates[1],
+              longitude: e.coordinates[0],
+            }}
           />
         ))}
       </MapView>
