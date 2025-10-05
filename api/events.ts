@@ -15,18 +15,18 @@ export interface EventItem {
 export const fetchEvents = async (): Promise<EventItem[]> => {
   try {
     const { data } = await instance.get(`/events`);
-    console.log("✅ fetchEvents response:", data);
-    return data || []; 
+    // console.log("✅ fetchEvents response:", data);
+    return data || [];
   } catch (err) {
     console.error("❌ fetchEvents error:", err);
-    return []; 
+    return [];
   }
 };
 
 export const fetchEventById = async (id: string): Promise<EventItem> => {
   try {
     const { data } = await instance.get(`/events/${id}`);
-    console.log("✅ fetchEventById response:", data);
+    // console.log("✅ fetchEventById response:", data);
     return data;
   } catch (err) {
     console.error("❌ fetchEventById error:", err);
@@ -54,5 +54,3 @@ export async function fetchEventsApi(): Promise<EventItem[]> {
   const { data } = await instance.get("/events");
   return data;
 }
-
-

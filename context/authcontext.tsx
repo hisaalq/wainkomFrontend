@@ -5,6 +5,10 @@ interface AuthContextType {
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   isOrganizer: boolean;
   setIsOrganizer: (isOrganizer: boolean) => void;
+  userId: string | null;
+  setUserId: (id: string | null) => void;
+  
+  
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -12,6 +16,10 @@ const AuthContext = createContext<AuthContextType>({
   setIsAuthenticated: () => {},
   isOrganizer: false,
   setIsOrganizer: () => {},
+  userId: null,
+  setUserId: () => {},
+
+  
 });
 
 export default AuthContext;
