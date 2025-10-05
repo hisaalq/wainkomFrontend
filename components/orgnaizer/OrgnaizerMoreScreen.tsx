@@ -1,9 +1,11 @@
 import { getOrgProfile } from "@/api/organizer";
 import { COLORS } from "@/assets/style/color";
+import { LAYOUT, TYPO } from "@/assets/style/stylesheet";
 import { OrganizerInfo } from "@/types/OrganizerInfo";
-import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -50,7 +52,6 @@ export default function MoreScreen() {
   const queryClient = useQueryClient();
   const [orgInfoState, setOrgInfoState] = React.useState({
     name: "",
-    rating: 0,
     image: "", // local URI from picker
   });
 
@@ -104,7 +105,7 @@ export default function MoreScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.safeArea}>
+      <View style={LAYOUT.screen}>
         <ActivityIndicator size="large" color="#0000ff" />
         <Text>Loading profile...</Text>
       </View>
@@ -112,7 +113,7 @@ export default function MoreScreen() {
   }
   if (isError) {
     return (
-      <View style={styles.safeArea}>
+      <View style={LAYOUT.screen}>
         <Text>
           Error: {(error as Error)?.message ?? "Something went wrong"}
         </Text>
@@ -121,7 +122,7 @@ export default function MoreScreen() {
   }
   if (!data) {
     return (
-      <View style={styles.safeArea}>
+      <View style={LAYOUT.screen}>
         <Text>No user profile found.</Text>
       </View>
     );
@@ -130,21 +131,14 @@ export default function MoreScreen() {
   const imageUri = orgInfoState.image || data.image;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[LAYOUT.screen]}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <Text style={styles.headerTitle}>More</Text>
-
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <Pressable onPress={pickImage}>
             <Image source={{ uri: imageUri }} style={styles.avatar} />
           </Pressable>
-          <Text style={styles.company}>{data?.name}</Text>
-          <View style={styles.ratingRow}>
-            <Ionicons name="star" size={14} color="#FBBF24" />
-            <Text style={styles.rating}>{data?.rating}</Text>
-          </View>
+          <Text style={[TYPO.h2]}>{data?.name}</Text>
         </View>
 
         {/* Items */}
@@ -154,17 +148,7 @@ export default function MoreScreen() {
             <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
           }
           title="My Events"
-        />
-        {/* Notifications */}
-        <PressableCard
-          left={
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={COLORS.primary}
-            />
-          }
-          title="Notifications"
+          onPress={() => router.push("/organizer/events" as any)}
         />
         {/* Language */}
         <PressableCard
@@ -172,42 +156,7 @@ export default function MoreScreen() {
           title="Language"
           value="English"
         />
-        {/* Help & Support */}
-        <PressableCard
-          left={
-            <Ionicons name="help-circle-outline" size={22} color={COLORS.quaternary} />
-          }
-          title="Help & Support"
-        />
-        {/* Privacy Policy */}
-        <PressableCard
-          left={
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={22}
-              color={COLORS.primary}
-            />
-          }
-          title="Privacy Policy"
-        />
-        {/* Terms of Service */}
-        <PressableCard
-          left={
-            <Ionicons
-              name="document-text-outline"
-              size={22}
-              color={COLORS.quaternary}
-            />
-          }
-          title="Terms of Service"
-        />
-        {/* About EventHub */}
-        <PressableCard
-          left={
-            <FontAwesome5 name="info-circle" size={20} color={COLORS.quaternary} />
-          }
-          title="About EventHub"
-        />
+        
         {/* Version */}
         <PressableCard
           left={
@@ -232,40 +181,25 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundd,
-  },
   content: {
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  headerTitle: {
-    color: COLORS.primary,
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
   profileCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.backgroundd,
+    backgroundColor: COLORS.surfaceAlt,
     padding: 16,
     borderRadius: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.quaternary,
+    borderColor: COLORS.border,
   },
   avatar: {
     width: 56,
     height: 56,
     borderRadius: 28,
     marginRight: 12,
-  },
-  company: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: "700",
   },
   role: {
     color: COLORS.secondary,
@@ -285,13 +219,13 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.backgroundd,
+    backgroundColor: COLORS.surface,
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: COLORS.quaternary,
+    borderColor: COLORS.border,
     ...Platform.select({
       ios: {
         shadowColor: "#000",

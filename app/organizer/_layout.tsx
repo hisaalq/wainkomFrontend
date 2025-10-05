@@ -28,6 +28,11 @@ import { Tabs } from 'expo-router';
         name="profile"
         options={{ href: null }}
       />
+      {/* Hide events (My Events) from tab bar but keep it routable */}
+      <Tabs.Screen
+        name="events"
+        options={{ href: null }}
+      />
       <Tabs.Screen
         name="more"
         options={{

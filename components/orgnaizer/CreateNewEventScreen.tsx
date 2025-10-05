@@ -28,9 +28,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { createEventApi } from "@/api/events"; // <-- API
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+// <-- API
 import { useRouter } from "expo-router";
 // If you need token directly, your axios instance already injects it.
 
@@ -245,9 +243,14 @@ export default function CreateEventScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View style={HEADER.topSpace}>
-            <Text style={HEADER.title}>Create Event</Text>
-            <Text style={HEADER.subtitle}>Share your event with community</Text>
+          <View style={[HEADER.topSpace, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+            <View>
+              <Text style={HEADER.title}>Create Event</Text>
+              <Text style={HEADER.subtitle}>Share your event with community</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={{ color: colors.muted, fontWeight: "700" }}>Cancel</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Upload / Preview */}
@@ -314,12 +317,15 @@ export default function CreateEventScreen() {
                 style={FORMS.inputText}
 
               />
+              <TouchableOpacity style={FORMS.inputRow} onPress={() => setCatModal(true)}>
+
               <Text style={[styles.input, { paddingVertical: 12 }]}>
                 {categories.find((c) => c._id === categoryId)?.name ??
                   "Select a category"}
               </Text>
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -414,16 +420,16 @@ export default function CreateEventScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom bar (static) */}
+      {/* Bottom bar (interactive) */}
       <View style={BOTTOM_BAR.bar}>
-        <View style={BOTTOM_BAR.item}>
+        <TouchableOpacity style={BOTTOM_BAR.item} onPress={() => router.replace("/organizer")}> 
           <Ionicons name="home" size={16} color={colors.text} />
           <Text style={BOTTOM_BAR.text}>Home</Text>
-        </View>
-        <View style={BOTTOM_BAR.item}>
+        </TouchableOpacity>
+        <TouchableOpacity style={BOTTOM_BAR.item} onPress={() => router.replace("/organizer/more")}> 
           <Ionicons name="ellipsis-horizontal" size={16} color={colors.muted} />
           <Text style={[BOTTOM_BAR.text, { color: colors.muted }]}>More</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Category modal */}
