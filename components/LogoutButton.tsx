@@ -1,3 +1,4 @@
+import { deleteToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import { signOut } from "@/assets/style/stylesheet";
 import AuthContext from "@/context/authcontext";
