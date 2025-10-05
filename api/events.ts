@@ -54,3 +54,14 @@ export async function fetchEventsApi(): Promise<EventItem[]> {
   const { data } = await instance.get("/events");
   return data;
 }
+
+export async function fetchEventsByOrganizer(orgId: string): Promise<EventItem[]> {
+  try {
+    const { data } = await instance.get(`/events/org/${orgId}`);
+    return data || [];
+  } catch (err) {
+    console.error("❌ fetchEventsByOrganizer error:", err);
+    return [];
+  }
+}
+
