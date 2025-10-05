@@ -1,4 +1,5 @@
-import OrganizerHomeScreen from "@/components/orgnaizer/OrgnaizerHomeScreen";
+import OrgnaizerHomeScreen from '@/components/orgnaizer/OrgnaizerHomeScreen';
+
 export default function OrganizerHome() {
-  return <OrganizerHomeScreen />;
+  return <OrgnaizerHomeScreen />;
 }

@@ -1,3 +1,4 @@
+import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
@@ -20,11 +21,12 @@ import { EventItem, fetchEvents } from "../api/events";
 const { width } = Dimensions.get("window");
 const cardSize = 100;
 
-export default function EventsScreen() {
+export default function EventsScreen({ userId }: { userId: string }) {
   const [selectedCat, setSelectedCat] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [savedEvents, setSavedEvents] = useState<string[]>([]); // الأحداث المحفوظة
 
   const formatDate = (dateString: string) => {
     try {
@@ -71,6 +73,29 @@ export default function EventsScreen() {
   const openEvent = (ev: EventItem) => {
     setSelectedEvent(ev);
     setModalVisible(true);
+  };
+
+  // حفظ/حذف الايفنت
+  const toggleBookmark = async (eventId: string) => {
+    const isSaved = savedEvents.includes(eventId);
+
+    // Optimistically update UI
+    setSavedEvents((prev) =>
+      isSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
+    );
+
+    try {
+      if (isSaved) {
+        await removeEngagementApi(eventId);
+      } else {
+        await saveEngagementApi(eventId);
+      }
+    } catch (err) {
+      console.error("Error toggling engagement:", err);
+      // revert UI state if remove fails
+      if (isSaved) setSavedEvents((prev) => [...prev, eventId]);
+      else setSavedEvents((prev) => prev.filter((id) => id !== eventId));
+    }
   };
 
   const filteredEvents = events?.filter((ev: EventItem) => {
@@ -210,7 +235,17 @@ export default function EventsScreen() {
               <View style={styles.eventInfo}>
                 <View style={styles.eventHeader}>
                   <Text style={styles.eventTitle}>{ev.title}</Text>
-                  <Ionicons name="bookmark-outline" size={22} color="#fff" />
+                  <TouchableOpacity onPress={() => toggleBookmark(ev._id)}>
+                    <Ionicons
+                      name={
+                        savedEvents.includes(ev._id)
+                          ? "bookmark"
+                          : "bookmark-outline"
+                      }
+                      size={22}
+                      color={savedEvents.includes(ev._id) ? "#00d4ff" : "#fff"}
+                    />
+                  </TouchableOpacity>
                 </View>
 
                 {categoryName && (
@@ -309,7 +344,6 @@ export default function EventsScreen() {
     </SafeAreaView>
   );
 }
-
 
 
 const styles = StyleSheet.create({
