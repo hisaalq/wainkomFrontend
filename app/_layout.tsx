@@ -1,6 +1,7 @@
 import { getToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
+import { OrganizerInfo } from "@/types/OrganizerInfo";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { jwtDecode } from "jwt-decode";
@@ -12,7 +13,7 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isOrganizer, setIsOrganizer] = useState(false);
-  const [organizerData, setOrganizerData] = useState(null);
+  const [organizerData, setOrganizerData] = useState<OrganizerInfo | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
