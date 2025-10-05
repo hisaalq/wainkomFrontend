@@ -75,6 +75,23 @@ function parseLngLat(text: string): [number, number] | null {
     : ([a, b] as [number, number]);
 }
 
+function combineDateAndTime(dateOnly: Date, timeOnly: Date): Date {
+  const combined = new Date(dateOnly);
+  combined.setHours(timeOnly.getHours());
+  combined.setMinutes(timeOnly.getMinutes());
+  combined.setSeconds(0);
+  combined.setMilliseconds(0);
+  return combined;
+}
+
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 
 export default function CreateEventScreen() {
   const router = useRouter();
@@ -105,6 +122,10 @@ export default function CreateEventScreen() {
     setTempDate(date ?? new Date());
   };
   const openTime = () => {
+    if (!date) {
+      Alert.alert("Select date first", "Please choose the event date before picking time.");
+      return;
+    }
     setPickerMode("time");
     const base = new Date();
     if (time) {
@@ -115,8 +136,31 @@ export default function CreateEventScreen() {
   };
   const cancelPicker = () => setPickerMode("none");
   const confirmPicker = () => {
-    if (pickerMode === "date") setDate(tempDate);
-    if (pickerMode === "time") setTime(tempDate);
+    if (pickerMode === "date") {
+      // Prevent selecting past dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const picked = new Date(tempDate);
+      picked.setHours(0, 0, 0, 0);
+      if (picked < today) {
+        Alert.alert("Invalid date", "Event date cannot be in the past.");
+        return;
+      }
+      setDate(tempDate);
+    }
+    if (pickerMode === "time") {
+      // If selected date is today, ensure time is in the future
+      if (date && isSameCalendarDay(date, new Date())) {
+        const now = new Date();
+        const candidate = new Date();
+        candidate.setHours(tempDate.getHours(), tempDate.getMinutes(), 0, 0);
+        if (candidate <= now) {
+          Alert.alert("Invalid time", "Event time must be later today.");
+          return;
+        }
+      }
+      setTime(tempDate);
+    }
     setPickerMode("none");
   };
   const onTempChange = (_e: DateTimePickerEvent, selected?: Date) => {
@@ -164,6 +208,13 @@ export default function CreateEventScreen() {
           "Missing fields",
           "Please fill title, description, date, time and duration."
         );
+        return;
+      }
+      // Validate combined date-time is in the future
+      const scheduledAt = combineDateAndTime(date, time);
+      const now = new Date();
+      if (scheduledAt <= now) {
+        Alert.alert("Invalid schedule", "Event date and time must be in the future.");
         return;
       }
       const coords = parseLngLat(locationText);
@@ -498,6 +549,7 @@ export default function CreateEventScreen() {
             themeVariant="dark"
             minuteInterval={1}
             is24Hour={false}
+            minimumDate={pickerMode === "date" ? (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })() : undefined}
             style={{ alignSelf: "stretch" }}
           />
           <View style={styles.modalActions}>
