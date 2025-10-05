@@ -1,4 +1,7 @@
+// api/index.ts
 import axios from "axios";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 import { getToken } from "./storage";
 
 const instance = axios.create({
@@ -7,10 +10,9 @@ const instance = axios.create({
 
 instance.interceptors.request.use(async (config) => {
   const token = await getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
 
 export default instance;

@@ -1,3 +1,4 @@
+import { OrganizerInfo } from "@/types/OrganizerInfo";
 import { createContext } from "react";
 
 interface AuthContextType {
@@ -9,6 +10,8 @@ interface AuthContextType {
   setUserId: (id: string | null) => void;
   
   
+  organizerData: OrganizerInfo | null;
+  setOrganizerData: (organizerData: OrganizerInfo | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,6 +23,8 @@ const AuthContext = createContext<AuthContextType>({
   setUserId: () => {},
 
   
+  organizerData: null,
+  setOrganizerData: () => {},
 });
 
 export default AuthContext;

@@ -25,8 +25,8 @@ export const fetchEvents = async (): Promise<EventItem[]> => {
 
 export const fetchEventById = async (id: string): Promise<EventItem> => {
   try {
-    const { data } = await instance.get(`/events/${id}`);
-    // console.log("✅ fetchEventById response:", data);
+    const { data } = await instance.get(`/events/event/${id}`);
+    console.log("✅ fetchEventById response:", data);
     return data;
   } catch (err) {
     console.error("❌ fetchEventById error:", err);
