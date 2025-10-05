@@ -14,6 +14,7 @@ export default function RootLayout() {
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [organizerData, setOrganizerData] = useState(null);
   const [isReady, setIsReady] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const checkToken = async () => {
     const token = await getToken();
@@ -28,12 +29,10 @@ export default function RootLayout() {
       console.log("organizerData from token:", (decodedToken as any).organizer);
     }
     setIsReady(true);
-
   };
   useEffect(() => {
     checkToken();
   }, []);
-
 
   if (!isReady) {
     return <ActivityIndicator color={COLORS.primary} />;
@@ -45,7 +44,9 @@ export default function RootLayout() {
           <Stack.Protected guard={isAuthenticated}>
               { isOrganizer ? <Stack.Screen name="organizer" /> : <Stack.Screen name="user" /> }
           </Stack.Protected>
-          <Stack.Protected guard={!isAuthenticated}><Stack.Screen name="(auth)" /></Stack.Protected>
+          <Stack.Protected guard={!isAuthenticated}>
+            <Stack.Screen name="(auth)" />
+          </Stack.Protected>
         </Stack>
       </AuthContext.Provider>
     </QueryClientProvider>
