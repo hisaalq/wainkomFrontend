@@ -28,9 +28,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { createEventApi } from "@/api/events"; // <-- API
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 // If you need token directly, your axios instance already injects it.
 
@@ -319,7 +316,7 @@ export default function CreateEventScreen() {
                   "Select a category"}
               </Text>
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
