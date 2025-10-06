@@ -2,7 +2,7 @@ import { getProfile, updateUser } from "@/api/user"; // <- unchanged
 import { COLORS } from "@/assets/style/color";
 import { LAYOUT, moreStyles, TYPO } from "@/assets/style/stylesheet";
 import LogoutButton from "@/components/LogoutButton";
-import { UserInfoMore } from "@/types/UserInfo";
+import { UserInfo } from "@/types/UserInfo";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
@@ -71,7 +71,7 @@ export default function MoreScreenUser() {
     })();
   }, []);
 
-  const { data, isLoading, isError, error } = useQuery<UserInfoMore>({
+  const { data, isLoading, isError, error } = useQuery<UserInfo>({
     queryKey: ["userProfile"],
     queryFn: getProfile,
   });

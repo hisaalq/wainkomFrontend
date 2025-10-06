@@ -1,4 +1,4 @@
-import { UserInfoMore } from "@/types";
+import { UserInfo } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import instance from ".";
 
@@ -12,8 +12,8 @@ export const getuser = async () => {
   return resp.data; 
 };
 
-export const updateUser = async (userInfo: Partial<UserInfoMore>) => {
-  const { data } = await instance.put<UserInfoMore>("/updateprofile", userInfo);
+export const updateUser = async (userInfo: Partial<UserInfo>) => {
+  const { data } = await instance.put<UserInfo>("/updateprofile", userInfo);
   return data;
 };
   
