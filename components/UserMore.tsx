@@ -1,29 +1,31 @@
-import { getProfile } from "@/api/user";
+import { getProfile, updateUser } from "@/api/user"; // <- unchanged
 import { COLORS } from "@/assets/style/color";
-import { UserInfo } from "@/types/UserInfo";
-import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { LAYOUT, moreStyles, TYPO } from "@/assets/style/stylesheet";
+import LogoutButton from "@/components/LogoutButton";
+import { UserInfoMore } from "@/types/UserInfo";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import LogoutButton from "./LogoutButton";
+
+/* ------------------------------- UI bits ------------------------------- */
 
 type ItemProps = {
   left: React.ReactNode;
   title: string;
   value?: string;
   onPress?: () => void;
-}
+};
 
 const PressableCard = ({ left, title, value, onPress }: ItemProps) => {
   return (
@@ -31,30 +33,34 @@ const PressableCard = ({ left, title, value, onPress }: ItemProps) => {
       onPress={onPress}
       android_ripple={{ color: COLORS.primary, foreground: true }}
       style={({ pressed }) => [
-        styles.item,
+        moreStyles.item,
         pressed && { borderColor: COLORS.primary, backgroundColor: "#121318" },
       ]}
     >
-      <View style={styles.leftIcon}>{left}</View>
-
-      <Text style={styles.itemText}>{title}</Text>
-
-      {!!value && <Text style={styles.value}>{value}</Text>}
-
+      <View style={moreStyles.leftIcon}>{left}</View>
+      <Text style={moreStyles.itemText}>{title}</Text>
+      {!!value && <Text style={moreStyles.value}>{value}</Text>}
       <Ionicons name="chevron-forward" size={18} color={COLORS.quaternary} />
     </Pressable>
   );
 };
 
-export default function MoreScreen() {
-  const queryClient = useQueryClient();
-  const [userInfoState, setUserInfoState] = React.useState({
-    name: "",
-    rating: 0,
-    image: "", // local URI from picker
-  });
+/* ------------------------------- helpers ------------------------------- */
 
-  // Ask for gallery permission once (Android needs this)
+function guessMime(uri: string) {
+  const ext = uri.split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "heic" || ext === "heif") return "image/heic";
+  return "image/jpeg"; // safe default for iOS/Android camera rolls
+}
+
+/* ------------------------------- Screen ------------------------------- */
+
+export default function MoreScreenUser() {
+  const queryClient = useQueryClient();
+  const [local, setLocal] = React.useState<{ image?: string }>({});
+
   React.useEffect(() => {
     (async () => {
       try {
@@ -65,20 +71,20 @@ export default function MoreScreen() {
     })();
   }, []);
 
-  const { data, isLoading, isError, error } = useQuery<UserInfo>({
+  const { data, isLoading, isError, error } = useQuery<UserInfoMore>({
     queryKey: ["userProfile"],
     queryFn: getProfile,
   });
 
-  const { mutate, isPending } = useMutation({
-    mutationKey: ["updateProfile"],
-    mutationFn: (image: string) => {
-      // Placeholder - updateOrganizerInfo doesn't exist
-      return Promise.resolve();
+  // Update avatar using multipart/form-data for multer backend
+  const { mutate: updateAvatar, isPending } = useMutation({
+    mutationKey: ["updateUser"],
+    mutationFn: async (image: string) => {
+      return updateUser({ image: image });
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-      setUserInfoState(prev => ({ ...prev, image: "" }));
+      await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      setLocal({ image: "" });
     },
     onError: (err) => {
       console.error("upload error:", err);
@@ -89,229 +95,81 @@ export default function MoreScreen() {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [3, 3],
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.9,
     });
-
     if (!res.canceled) {
-      setUserInfoState((prev) => ({ ...prev, image: res.assets[0].uri })); // "file://..." URI
+      const uri = res.assets[0].uri;
+      setLocal({ image: uri });
+      updateAvatar(uri);
     }
-  };
-
-  const handleUpdateProfile = () => {
-    if (userInfoState.image) mutate(userInfoState.image);
   };
 
   if (isLoading) {
     return (
-      <View style={styles.safeArea}>
+      <View style={LAYOUT.screen}>
         <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading profile...</Text>
+        <Text style={{ color: COLORS.text }}>Loading profile...</Text>
       </View>
     );
   }
   if (isError) {
     return (
-      <View style={styles.safeArea}>
-        <Text>
-          Error: {(error as Error)?.message ?? "Something went wrong"}
-        </Text>
+      <View style={LAYOUT.screen}>
+        <Text style={{ color: COLORS.text }}>Error: {(error as Error)?.message ?? "Something went wrong"}</Text>
       </View>
     );
   }
   if (!data) {
     return (
-      <View style={styles.safeArea}>
-        <Text>No user profile found.</Text>
+      <View style={LAYOUT.screen}>
+        <Text style={{ color: COLORS.text }}>No user profile found.</Text>
       </View>
     );
   }
 
-  const imageUri = userInfoState.image;
-  const role = data.isOrganizer ? "Organizer" : "User";
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <Text style={styles.headerTitle}>More</Text>
+  const imageUri = local.image || data.image;
 
+  return (
+    <SafeAreaView style={[LAYOUT.screen]}>
+      <ScrollView contentContainerStyle={moreStyles.content}>
         {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <Pressable onPress={pickImage}>
-            <Image source={{ uri: imageUri }} style={styles.avatar} />
+        <View style={moreStyles.profileCard}>
+          <Pressable onPress={pickImage} disabled={isPending}>
+            {/* If you sometimes have no avatar, guard the Image to avoid RN warnings */}
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={moreStyles.avatar} />
+            ) : (
+              <View style={[moreStyles.avatar, { alignItems: "center", justifyContent: "center" }]}>
+                <Ionicons name="person" size={42} color={COLORS.quaternary} />
+              </View>
+            )}
           </Pressable>
-          <Text style={styles.company}>{data?.username}</Text>
+          <Text style={[TYPO.h2]}>{data.username}</Text>
         </View>
 
-        {/* Items */}
-        {/* My Events */}
+        {/* Rest of the list */}
         <PressableCard
-          left={
-            <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
-          }
+          left={<Ionicons name="calendar-outline" size={22} color={COLORS.primary} />}
           title="My Events"
+          onPress={() => router.push("/myevents" as any)}
         />
-        {/* Notifications */}
-        <PressableCard
-          left={
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color={COLORS.primary}
-            />
-          }
-          title="Notifications"
-        />
-        {/* Language */}
+
         <PressableCard
           left={<Ionicons name="language" size={22} color={COLORS.primary} />}
           title="Language"
-          value={role}
+          value="English"
         />
-        {/* Help & Support */}
+
         <PressableCard
-          left={
-            <Ionicons name="help-circle-outline" size={22} color={COLORS.quaternary} />
-          }
-          title="Help & Support"
-        />
-        {/* Privacy Policy */}
-        <PressableCard
-          left={
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={22}
-              color={COLORS.primary}
-            />
-          }
-          title="Privacy Policy"
-        />
-        {/* Terms of Service */}
-        <PressableCard
-          left={
-            <Ionicons
-              name="document-text-outline"
-              size={22}
-              color={COLORS.quaternary}
-            />
-          }
-          title="Terms of Service"
-        />
-        {/* About EventHub */}
-        <PressableCard
-          left={
-            <FontAwesome5 name="info-circle" size={20} color={COLORS.quaternary} />
-          }
-          title="About EventHub"
-        />
-        {/* Version */}
-        <PressableCard
-          left={
-            <MaterialIcons
-              name="system-update-alt"
-              size={22}
-              color={COLORS.quaternary}
-            />
-          }
+          left={<MaterialIcons name="system-update-alt" size={22} color={COLORS.quaternary} />}
           title="Version"
           value="1.0.0"
         />
 
-        {/* Sign out */}
         <LogoutButton />
-
-        {/* Bottom spacing for safe scroll */}
         <View style={{ height: 16 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.backgroundd,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  headerTitle: {
-    color: COLORS.primary,
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 14,
-  },
-  profileCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.backgroundd,
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.quaternary,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    marginRight: 12,
-  },
-  company: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  role: {
-    color: COLORS.secondary,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  rating: {
-    color: COLORS.primary,
-    marginLeft: 6,
-    fontWeight: "600",
-  },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.backgroundd,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.quaternary,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowOffset: { width: 0, height: 4 },
-        shadowRadius: 8,
-      },
-      android: { elevation: 2 },
-    }),
-  },
-  leftIcon: {
-    width: 28,
-    alignItems: "center",
-    marginRight: 10,
-  },
-  itemText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    flex: 1,
-    fontWeight: "600",
-  },
-  value: {
-    color: COLORS.secondary,
-    fontSize: 14,
-    marginRight: 6,
-  },
-});

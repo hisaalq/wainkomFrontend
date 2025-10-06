@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { COLORS } from './color';
 
 export const SPACING = {
@@ -244,4 +244,94 @@ export const MAP = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   primaryBtnText: { color: COLORS.backgroundn, fontWeight: '700' },
+});
+
+// Styles used by components/UserMore.tsx
+export const moreStyles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundd,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  headerTitle: {
+    color: COLORS.primary,
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  profileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.backgroundd,
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.quaternary,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+  },
+  company: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  role: {
+    color: COLORS.secondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  rating: {
+    color: COLORS.primary,
+    marginLeft: 6,
+    fontWeight: "600",
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.backgroundd,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.quaternary,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  leftIcon: {
+    width: 28,
+    alignItems: "center",
+    marginRight: 10,
+  },
+  itemText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    flex: 1,
+    fontWeight: "600",
+  },
+  value: {
+    color: COLORS.secondary,
+    fontSize: 14,
+    marginRight: 6,
+  },
 });
