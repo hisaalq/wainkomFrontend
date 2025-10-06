@@ -1,3 +1,4 @@
+import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
@@ -20,7 +21,6 @@ import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
-
 // Extend your EventItem so TS knows these might exist
 type EventItem = BaseEventItem & {
   placeName?: string;
@@ -33,11 +33,12 @@ type EventItem = BaseEventItem & {
       };
 };
 
-export default function EventsScreen() {
+export default function EventsScreen({ userId }: { userId: string }) {
   const [selectedCat, setSelectedCat] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [savedEvents, setSavedEvents] = useState<string[]>([]); // الأحداث المحفوظة
 
   const formatDate = (dateString: string) => {
     try {
@@ -180,6 +181,36 @@ export default function EventsScreen() {
 
     return "Unknown location";
   };
+  // حفظ/حذف الايفنت
+  const toggleBookmark = async (eventId: string) => {
+    const isSaved = savedEvents.includes(eventId);
+
+    // Optimistically update UI
+    setSavedEvents((prev) =>
+      isSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
+    );
+
+    try {
+      if (isSaved) {
+        await removeEngagementApi(eventId);
+      } else {
+        await saveEngagementApi(eventId);
+      }
+    } catch (err) {
+      console.error("Error toggling engagement:", err);
+      // revert UI state if remove fails
+      if (isSaved) setSavedEvents((prev) => [...prev, eventId]);
+      else setSavedEvents((prev) => prev.filter((id) => id !== eventId));
+    }
+  };
+
+  const filteredEvents = events?.filter((ev: EventItem) => {
+    const matchSearch = ev.title
+      .toLowerCase()
+      .includes(searchText.toLowerCase());
+    const matchCat = selectedCat === "all" || ev.categoryId === selectedCat;
+    return matchSearch && matchCat;
+  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#121212" }}>
@@ -299,7 +330,17 @@ export default function EventsScreen() {
               <View style={styles.eventInfo}>
                 <View style={styles.eventHeader}>
                   <Text style={styles.eventTitle}>{ev.title}</Text>
-                  <Ionicons name="bookmark-outline" size={22} color="#fff" />
+                  <TouchableOpacity onPress={() => toggleBookmark(ev._id)}>
+                    <Ionicons
+                      name={
+                        savedEvents.includes(ev._id)
+                          ? "bookmark"
+                          : "bookmark-outline"
+                      }
+                      size={22}
+                      color={savedEvents.includes(ev._id) ? "#00d4ff" : "#fff"}
+                    />
+                  </TouchableOpacity>
                 </View>
 
                 {!!catName && (

@@ -1,6 +1,7 @@
-import { deleteEventApi, fetchEventsApi, updateEventApi } from "@/api/events";
+import { deleteEventApi, fetchEventsApi, updateEventApi, fetchEventsByOrganizer } from "@/api/events";
 import { getOrgProfile } from "@/api/organizer";
 import { deleteToken } from "@/api/storage";
+import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -100,6 +101,68 @@ const OrgnaizerHomeScreen = () => {
     setNewImage(event.image);
     setEditModalVisible(true);
   };
+  // Refresh data periodically or when component mounts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("Refreshing data...");
+      loadData();
+    }, 5000); // Refresh every 5 seconds for testing
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundd} />
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={{ paddingBottom: 16 }} // <= small, no white gap
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ===== Top Header ===== */}
+          <View style={styles.topHeader}>
+            <Text style={styles.appTitle}>EventHub Kuwait</Text>
+
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <TouchableOpacity style={styles.circleBtn} onPress={() => router.push("/createEvent")}>
+                <Ionicons name="add" size={18} color={colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.circleBtn}
+                onPress={() => Alert.alert("Notifications", "No notifications yet.")}
+              >
+                <Ionicons name="notifications-outline" size={18} color={colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => router.push("/organizer/profile")}>
+                {orgImage ? (
+                  <Image
+                    source={{ uri: orgImage }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={18} color={colors.muted} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ===== Organization Card ===== */}
+          <View style={styles.orgCard}>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={styles.orgLogo}>
+                <MaterialCommunityIcons
+                  name="party-popper"
+                  size={24}
+                  color={colors.primary}
+                />
+              </View>
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();

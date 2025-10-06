@@ -28,6 +28,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const GOOGLE_PLACES_KEY = "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ";
+// <-- API
+import { useRouter } from "expo-router";
+// If you need token directly, your axios instance already injects it.
+
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { createEventApi } from "@/api/events";
+
 
 const colors = {
   bg: "#0F1115",
@@ -280,6 +287,10 @@ export default function CreateNewEventScreen() {
     setTempDate(date ?? new Date());
   };
   const openTime = () => {
+    if (!date) {
+      Alert.alert("Select date first", "Please choose the event date before picking time.");
+      return;
+    }
     setPickerMode("time");
     const base = new Date();
     if (time) {
@@ -290,8 +301,31 @@ export default function CreateNewEventScreen() {
   };
   const cancelPicker = () => setPickerMode("none");
   const confirmPicker = () => {
-    if (pickerMode === "date") setDate(tempDate);
-    if (pickerMode === "time") setTime(tempDate);
+    if (pickerMode === "date") {
+      // Prevent selecting past dates
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const picked = new Date(tempDate);
+      picked.setHours(0, 0, 0, 0);
+      if (picked < today) {
+        Alert.alert("Invalid date", "Event date cannot be in the past.");
+        return;
+      }
+      setDate(tempDate);
+    }
+    if (pickerMode === "time") {
+      // If selected date is today, ensure time is in the future
+      if (date && isSameCalendarDay(date, new Date())) {
+        const now = new Date();
+        const candidate = new Date();
+        candidate.setHours(tempDate.getHours(), tempDate.getMinutes(), 0, 0);
+        if (candidate <= now) {
+          Alert.alert("Invalid time", "Event time must be later today.");
+          return;
+        }
+      }
+      setTime(tempDate);
+    }
     setPickerMode("none");
   };
   const onTempChange = (_e: DateTimePickerEvent, selected?: Date) => {
@@ -336,6 +370,13 @@ export default function CreateNewEventScreen() {
           "Missing fields",
           "Please fill title, description, date, time and duration."
         );
+        return;
+      }
+      // Validate combined date-time is in the future
+      const scheduledAt = combineDateAndTime(date, time);
+      const now = new Date();
+      if (scheduledAt <= now) {
+        Alert.alert("Invalid schedule", "Event date and time must be in the future.");
         return;
       }
       const coords = parseLngLat(locationText);
@@ -466,12 +507,15 @@ export default function CreateNewEventScreen() {
                 size={18}
                 color={colors.muted}
               />
+              <TouchableOpacity style={FORMS.inputRow} onPress={() => setCatModal(true)}>
+
               <Text style={[styles.input, { paddingVertical: 12 }]}>
                 {categories.find((c) => c._id === categoryId)?.name ??
                   "Select a category"}
               </Text>
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -690,6 +734,7 @@ export default function CreateNewEventScreen() {
             themeVariant="dark"
             minuteInterval={1}
             is24Hour={false}
+            minimumDate={pickerMode === "date" ? (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })() : undefined}
             style={{ alignSelf: "stretch" }}
           />
           <View style={styles.modalActions}>
