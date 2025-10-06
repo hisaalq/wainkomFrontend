@@ -221,10 +221,18 @@ const ProfileScreen = () => {
               <View style={styles.eventContent}>
                 <Text style={styles.eventTitle}>{title}</Text>
                 <Text style={styles.eventDesc}>{description}</Text>
-                {location && location.coordinates && (
+                {location &&
+                  typeof location !== "string" &&
+                  location.coordinates && (
+                    <Text style={styles.eventLocationText}>
+                      Location: Lat {location.coordinates[1]}, Lng{" "}
+                      {location.coordinates[0]}
+                    </Text>
+                  )}
+
+                {location && typeof location === "string" && (
                   <Text style={styles.eventLocationText}>
-                    Location: Lat {location.coordinates[1]}, Lng{" "}
-                    {location.coordinates[0]}
+                    Location: {location}
                   </Text>
                 )}
                 <Text style={styles.eventDateText}>
