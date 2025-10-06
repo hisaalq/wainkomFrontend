@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +40,11 @@ export default function RootLayout() {
   }, []);
 
   if (!isReady) {
-    return <ActivityIndicator color={COLORS.primary} />;
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.backgroundd }}>
+        <ActivityIndicator color={COLORS.primary} />
+      </View>
+    );
   }
   return (
     <QueryClientProvider client={queryClient}>

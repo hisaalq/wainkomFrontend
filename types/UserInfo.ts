@@ -1,9 +1,11 @@
+//sign in / sign up
 export interface UserInfo {
   username: string;
   email: string;
-  isOrganizer?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  image: string;
+  bio: string;
+  rating: number;
+  Events: Event[];
+  createdAt: string;
+  updatedAt: string;
 }
-
-

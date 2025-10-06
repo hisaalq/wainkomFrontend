@@ -1,11 +1,13 @@
 // api/index.ts
 import axios from "axios";
-import Constants from "expo-constants";
-import { Platform } from "react-native";
 import { getToken } from "./storage";
 
+// Prefer env-configured API base URL; fall back to localhost
+const apiBaseUrl =
+  process.env.EXPO_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || "http://localhost:8000/api";
+
 const instance = axios.create({
-  baseURL: "http://172.20.10.9:8000/api",
+  baseURL: apiBaseUrl,
 });
 
 instance.interceptors.request.use(async (config) => {
