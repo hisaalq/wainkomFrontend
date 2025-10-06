@@ -1,6 +1,6 @@
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -14,7 +14,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+
+ from "react-native";
 import { CategoryItem, fetchCategories } from "../api/categories";
 import { EventItem, fetchEvents } from "../api/events";
 
@@ -22,6 +24,7 @@ const { width } = Dimensions.get("window");
 const cardSize = 100;
 
 export default function EventsScreen({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
   const [selectedCat, setSelectedCat] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -39,6 +42,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
       return "Invalid date";
     }
   };
+  
 
   const formatTime = (dateString: string) => {
     try {
@@ -74,29 +78,45 @@ export default function EventsScreen({ userId }: { userId: string }) {
     setSelectedEvent(ev);
     setModalVisible(true);
   };
+  
+  // Mutation للحفظ
+  const saveMutation = useMutation({
+    mutationFn: saveEngagementApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["engagements"] });
+    },
+    onError: (err, eventId, context) => {
+      console.error("Error saving engagement:", err);
+      setSavedEvents((prev) => prev.filter((id) => id !== eventId));
+    },
+  });
 
-  // حفظ/حذف الايفنت
-  const toggleBookmark = async (eventId: string) => {
+  // Mutation للحذف
+  const removeMutation = useMutation({
+    mutationFn: removeEngagementApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["engagements"] });
+    },
+    onError: (err, eventId, context) => {
+      console.error("Error removing engagement:", err);
+      setSavedEvents((prev) => [...prev, eventId]);
+    },
+  });
+
+  const toggleBookmark = (eventId: string) => {
     const isSaved = savedEvents.includes(eventId);
 
-    // Optimistically update UI
     setSavedEvents((prev) =>
       isSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
     );
 
-    try {
-      if (isSaved) {
-        await removeEngagementApi(eventId);
-      } else {
-        await saveEngagementApi(eventId);
-      }
-    } catch (err) {
-      console.error("Error toggling engagement:", err);
-      // revert UI state if remove fails
-      if (isSaved) setSavedEvents((prev) => [...prev, eventId]);
-      else setSavedEvents((prev) => prev.filter((id) => id !== eventId));
+    if (isSaved) {
+      removeMutation.mutate(eventId);
+    } else {
+      saveMutation.mutate(eventId);
     }
   };
+  // ===============================================
 
   const filteredEvents = events?.filter((ev: EventItem) => {
     const matchSearch = ev.title
@@ -115,19 +135,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
       >
         {/* العنوان */}
         <View style={styles.topRow}>
-          <View>
-            <Text style={styles.title}>Events</Text>
-            <Text style={styles.subtitle}>Discover amazing events</Text>
-          </View>
+          
           <View style={styles.rightIcons}>
-            <View style={styles.bellWrapper}>
-              <Ionicons name="notifications-outline" size={30} color="#fff" />
-              <View style={styles.redDot} />
-            </View>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/60" }}
-              style={styles.avatar}
-            />
+            
           </View>
         </View>
 

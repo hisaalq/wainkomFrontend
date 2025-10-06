@@ -3,8 +3,8 @@
 import { BOTTOM_BAR, BUTTONS, FORMS, HEADER, UPLOAD } from "@/assets/style/stylesheet";
 
 // app/CreateNewEventScreen.tsx
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+
 
 import DateTimePicker, {
   DateTimePickerEvent,
@@ -23,14 +23,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { TouchableOpacity } from "react-native";
 
-import { createEventApi } from "@/api/events"; // <-- API
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 // If you need token directly, your axios instance already injects it.
 
@@ -319,8 +317,7 @@ export default function CreateEventScreen() {
                   "Select a category"}
               </Text>
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
-            </TouchableOpacity>
-
+            </View>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <Label text="Date" />
