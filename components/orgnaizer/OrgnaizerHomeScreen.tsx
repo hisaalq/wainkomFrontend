@@ -1,7 +1,8 @@
 // app/OrgnaizerHomeScreen.tsx
-import { fetchEventsApi } from "@/api/events";
+import { fetchEventsByOrganizer } from "@/api/events";
 import { getOrgProfile } from "@/api/organizer";
 import { deleteToken } from "@/api/storage";
+import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import {
   FontAwesome5,
@@ -84,23 +85,17 @@ const OrgnaizerHomeScreen = () => {
 
   const loadData = async () => {
     try {
-      const [eventsData, org] = await Promise.allSettled([
-        fetchEventsApi(),
-        getOrgProfile(),
-      ]);
-
-      if (eventsData.status === "fulfilled") {
-        setEvents(eventsData.value);
-        console.log("Events loaded:", eventsData.value.length);
-      }
-      
-      if (org.status === "fulfilled") {
-        console.log("Organizer profile loaded:", org.value);
-        setOrgImage(org.value?.image);
+      const org = await getOrgProfile();
+      console.log("Organizer profile loaded:", org);
+      setOrgImage(org?.image);
+      const orgId = (org as any)?._id || (org as any)?.id;
+      if (orgId) {
+        const organizerEvents = await fetchEventsByOrganizer(orgId);
+        setEvents(organizerEvents);
+        console.log("Organizer events loaded via API:", organizerEvents?.length ?? 0);
       } else {
-        console.log("Failed to load organizer profile:", org.reason);
+        setEvents([]);
       }
-      // No profile gate - organizers created during signup have complete profiles
     } catch (err) {
       console.log("Error loading organizer home:", err);
     }
@@ -122,7 +117,7 @@ const OrgnaizerHomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundd} />
       <View style={styles.container}>
         <ScrollView
           style={styles.scroll}
@@ -140,12 +135,11 @@ const OrgnaizerHomeScreen = () => {
                 <Ionicons name="add" size={18} color={colors.text} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.circleBtn} onPress={handleLogout}>
-                <Ionicons
-                  name="log-out-outline"
-                  size={18}
-                  color={colors.text}
-                />
+              <TouchableOpacity
+                style={styles.circleBtn}
+                onPress={() => Alert.alert("Notifications", "No notifications yet.")}
+              >
+                <Ionicons name="notifications-outline" size={18} color={colors.text} />
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => router.push("/organizer/profile")}>
@@ -213,17 +207,35 @@ const OrgnaizerHomeScreen = () => {
             </View>
           </View>
 
-          {/* ===== Our Events header ===== */}
+          {/* ===== Your Events header ===== */}
           <View style={styles.rowHeader}>
-            <Text style={styles.sectionTitle}>Our Events</Text>
-            <TouchableOpacity>
+            <Text style={styles.sectionTitle}>Your Events</Text>
+            <TouchableOpacity onPress={() => router.push("/organizer/events" as any)}>
               <Text style={styles.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
 
-          {/* ===== Event Cards ===== */}
+          {/* ===== Event Cards / Empty state ===== */}
           <View style={{ paddingHorizontal: 16, gap: 12 }}>
-            {events.map((ev) => (
+            {events.length === 0 ? (
+              <View style={styles.ctaCard}>
+                <View style={styles.ctaCircle}>
+                  <Ionicons name="add" size={24} color={colors.text} />
+                </View>
+                <Text style={styles.ctaTitle}>Create New Event</Text>
+                <Text style={styles.ctaDesc}>
+                  Share your amazing events with the Kuwait community
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.ctaBtn}
+                  onPress={() => router.push("/createEvent")}
+                >
+                  <Text style={styles.ctaBtnTxt}>Get Started</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+            events.map((ev) => (
               <View key={ev._id} style={styles.eventCard}>
                 <View style={{ flexDirection: "row", gap: 12 }}>
                   <Image
@@ -267,30 +279,10 @@ const OrgnaizerHomeScreen = () => {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+            )))}
           </View>
 
-          {/* ===== CTA ===== */}
-          <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-            <View style={styles.ctaCard}>
-              <View style={styles.ctaCircle}>
-                <Ionicons name="add" size={24} color={colors.text} />
-              </View>
-              <Text style={styles.ctaTitle}>Create New Event</Text>
-              <Text style={styles.ctaDesc}>
-                Share your amazing events with the Kuwait community
-              </Text>
-
-              <TouchableOpacity
-                style={styles.ctaBtn}
-                onPress={() => {
-                  router.push("/createEvent");
-                }}
-              >
-                <Text style={styles.ctaBtnTxt}>Get Started</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* CTA card removed to avoid too many entry points */}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -299,9 +291,9 @@ const OrgnaizerHomeScreen = () => {
 
 // ===== Styles =====
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.bg },
-  container: { flex: 1, backgroundColor: colors.bg },
-  scroll: { flex: 1, backgroundColor: colors.bg },
+  safeArea: { flex: 1, backgroundColor: COLORS.backgroundd },
+  container: { flex: 1, backgroundColor: COLORS.backgroundd },
+  scroll: { flex: 1, backgroundColor: COLORS.backgroundd },
 
   topHeader: {
     paddingHorizontal: 16,
