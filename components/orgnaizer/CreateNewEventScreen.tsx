@@ -25,7 +25,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const GOOGLE_PLACES_KEY = "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ";
+// Google Places key from env or app.json
+const GOOGLE_PLACES_KEY =
+  process.env.EXPO_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
+
 
 const colors = {
   bg: "#0F1115",
@@ -506,32 +509,26 @@ export default function CreateNewEventScreen() {
               />
             </View>
 
-            <Label text="Category" />
-            <TouchableOpacity
-              style={styles.inputWrap}
-              onPress={() => setCatModal(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="pricetags-outline"
-                size={18}
-                color={colors.muted}
+
+            <Label text="Category (optional id)" />
+            <View style={styles.inputWrap}>
+              <TextInput
+                value={categoryId}
+                onChangeText={setCategoryId}
+                placeholder="Enter categoryId (optional)"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+
               />
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={[styles.input, { paddingVertical: 12 }]}>
-                  {categories.find((c) => c._id === categoryId)?.name ??
-                    "Select a category"}
-                </Text>
-                <Ionicons name="chevron-down" size={18} color={colors.muted} />
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity style={[styles.inputWrap, { height: 50 }]} onPress={() => setCatModal(true)}>
+
+              <Text style={[styles.input, { paddingVertical: 12 }]}> 
+                {categories.find((c) => c._id === categoryId)?.name ??
+                  "Select a category"}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={colors.muted} />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>

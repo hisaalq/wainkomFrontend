@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { COLORS } from './color';
 
 export const SPACING = {
@@ -179,4 +179,175 @@ export const MODAL = StyleSheet.create({
   btnGhostText: { color: COLORS.muted, fontWeight: '700' },
   btnPrimary: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: COLORS.primary },
   btnPrimaryText: { color: '#0B1416', fontWeight: '900' },
+});
+
+export const MAP = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.backgroundd },
+  map: { flex: 1 },
+  searchWrap: {
+    position: "absolute",
+    top: 14,
+    left: 12,
+    right: 12,
+    zIndex: 10,
+  },
+  chipRow: {
+    position: "absolute",
+    bottom: 18,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+  },
+  chip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: COLORS.quinary,
+  },
+  chipText: { fontWeight: "600", color: COLORS.primary },
+  calloutTitle: { fontWeight: "700", marginBottom: 4 },
+  markerPin: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.secondary, borderColor: COLORS.backgroundd, borderWidth: 2 },
+  stepper: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  step: { color: '#7d8b8c', fontWeight: '700' },
+  stepActive: { color: COLORS.primary },
+  chipsRow: {
+    position: 'absolute',
+    top: 86,
+    left: 16,
+    right: 16,
+    zIndex: 12,
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  chipTitle: { color: '#7c8a8c', fontSize: 12, marginBottom: 2 },
+  chipValue: { fontWeight: '800', fontSize: 16 },
+  bottomCard: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 14,
+    paddingBottom: 24,
+    borderTopLeftRadius: RADIUS.lg,
+    borderTopRightRadius: RADIUS.lg,
+    backgroundColor: COLORS.backgroundn,
+    alignItems: 'center',
+    gap: 8,
+  },
+  bottomTitle: { color: '#7c8a8c', fontSize: 14 },
+  bottomEta: { fontSize: 18, fontWeight: '800' },
+  placeName: { fontSize: 16, fontWeight: '700' },
+  primaryBtn: {
+    marginTop: 8,
+    backgroundColor: COLORS.backgroundd,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+  },
+  primaryBtnText: { color: COLORS.backgroundn, fontWeight: '700' },
+});
+
+// Styles used by components/UserMore.tsx
+export const moreStyles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.backgroundd,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  headerTitle: {
+    color: COLORS.primary,
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  profileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.backgroundd,
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.quaternary,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginRight: 12,
+  },
+  company: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  role: {
+    color: COLORS.secondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  rating: {
+    color: COLORS.primary,
+    marginLeft: 6,
+    fontWeight: "600",
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.backgroundd,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.quaternary,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  leftIcon: {
+    width: 28,
+    alignItems: "center",
+    marginRight: 10,
+  },
+  itemText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    flex: 1,
+    fontWeight: "600",
+  },
+  value: {
+    color: COLORS.secondary,
+    fontSize: 14,
+    marginRight: 6,
+  },
 });

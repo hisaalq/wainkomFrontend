@@ -1,5 +1,5 @@
-import ProfileScreen from "@/components/profilepage";
+import UserMore from "@/components/UserMore";
 
 export default function profile() {
-  return <ProfileScreen />
+  return <UserMore />
 }

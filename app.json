@@ -11,7 +11,7 @@
     "ios": {
       "bundleIdentifier": "com.wainkom.frontend",
       "config": {
-        "googleMapsApiKey": "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ"
+        "googleMapsApiKey": "GOOGLE_API_KEY"
       },
       "supportsTablet": true
     },
@@ -19,7 +19,7 @@
       "package": "com.wainkom.frontend",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ"
+          "apiKey": "GOOGLE_API_KEY"
         }
       },
       "adaptiveIcon": {
@@ -48,7 +48,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
