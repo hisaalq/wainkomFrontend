@@ -1,25 +1,24 @@
-// app/OrgnaizerHomeScreen.tsx
-import { fetchEventsApi } from "@/api/events";
+import { deleteEventApi, fetchEventsApi, updateEventApi } from "@/api/events";
 import { getOrgProfile } from "@/api/organizer";
 import { deleteToken } from "@/api/storage";
+import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
-import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useContext, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -39,121 +38,194 @@ const colors = {
 type EventDoc = {
   _id: string;
   title: string;
-  desc: string;
   description?: string;
+  desc?: string;
   image: string;
   date: string;
   time: string;
   categoryId?: string;
 };
 
-function formatDateNice(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-const OrgnaizerHomeScreen = () => {
+const OrganizerHomeScreen = () => {
   const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
   const [events, setEvents] = useState<EventDoc[]>([]);
   const [orgImage, setOrgImage] = useState<string | undefined>(undefined);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const [selectedEvent, setSelectedEvent] = useState<EventDoc | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newImage, setNewImage] = useState<string | null>(null);
 
   const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            await deleteToken();
-            setIsAuthenticated(false);
-            setIsOrganizer(false);
-            router.replace("/(auth)");
-          },
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await deleteToken();
+          setIsAuthenticated(false);
+          setIsOrganizer(false);
+          router.replace("/(auth)");
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const [eventsData, org] = await Promise.allSettled([
         fetchEventsApi(),
         getOrgProfile(),
       ]);
-
-      if (eventsData.status === "fulfilled") {
-        setEvents(eventsData.value);
-        console.log("Events loaded:", eventsData.value.length);
-      }
-      
-      if (org.status === "fulfilled") {
-        console.log("Organizer profile loaded:", org.value);
-        setOrgImage(org.value?.image);
-      } else {
-        console.log("Failed to load organizer profile:", org.reason);
-      }
-      // No profile gate - organizers created during signup have complete profiles
+      if (eventsData.status === "fulfilled") setEvents(eventsData.value);
+      if (org.status === "fulfilled") setOrgImage(org.value?.image);
     } catch (err) {
-      console.log("Error loading organizer home:", err);
+      console.log("Load error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
-  }, []);
-
-  // Refresh data periodically or when component mounts
-  useEffect(() => {
     const interval = setInterval(() => {
-      console.log("Refreshing data...");
+      // refresh periodically (optional)
       loadData();
-    }, 5000); // Refresh every 5 seconds for testing
-    
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
+  const openEdit = (event: EventDoc) => {
+    setSelectedEvent(event);
+    setNewTitle(event.title);
+    setNewDescription(event.description || event.desc || "");
+    setNewImage(event.image);
+    setEditModalVisible(true);
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Please allow access to your photos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      quality: 0.9,
+      aspect: [16, 9],
+    });
+    if (!result.canceled && result.assets?.length > 0) {
+      setNewImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedEvent) return;
+    if (!newTitle.trim()) {
+      Alert.alert("Validation", "Title cannot be empty.");
+      return;
+    }
+    try {
+      await updateEventApi(selectedEvent._id, {
+        title: newTitle,
+        description: newDescription,
+        image: newImage ?? undefined,
+      });
+      Alert.alert("Updated", "Event updated successfully!");
+      setEditModalVisible(false);
+      loadData();
+    } catch (err) {
+      Alert.alert("Error", "Failed to update event.");
+    }
+  };
+
+  const handleDelete = (eventId: string) => {
+    Alert.alert("Delete Event", "Are you sure you want to delete this event?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteEventApi(eventId);
+            Alert.alert("Deleted", "Event has been deleted.");
+            loadData();
+          } catch {
+            Alert.alert("Error", "Failed to delete event.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const formatDateNice = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          backgroundColor: colors.bg,
+        }}
+      >
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.backgroundd}
+      />
       <View style={styles.container}>
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={{ paddingBottom: 16 }} // <= small, no white gap
+          contentContainerStyle={{ paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}
         >
           {/* ===== Top Header ===== */}
           <View style={styles.topHeader}>
             <Text style={styles.appTitle}>EventHub Kuwait</Text>
-
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
-              <TouchableOpacity style={styles.circleBtn} onPress={() => router.push("/createEvent")}>
+              <TouchableOpacity
+                style={styles.circleBtn}
+                onPress={() => router.push("/createEvent")}
+              >
                 <Ionicons name="add" size={18} color={colors.text} />
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.circleBtn} onPress={handleLogout}>
+              <TouchableOpacity
+                style={styles.circleBtn}
+                onPress={() =>
+                  Alert.alert("Notifications", "No notifications yet.")
+                }
+              >
                 <Ionicons
-                  name="log-out-outline"
+                  name="notifications-outline"
                   size={18}
                   color={colors.text}
                 />
               </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => router.push("/organizer/profile")}>
+              <TouchableOpacity
+                onPress={() => router.push("/organizer/profile")}
+              >
                 {orgImage ? (
-                  <Image
-                    source={{ uri: orgImage }}
-                    style={styles.avatar}
-                  />
+                  <Image source={{ uri: orgImage }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Ionicons name="person" size={18} color={colors.muted} />
@@ -163,153 +235,107 @@ const OrgnaizerHomeScreen = () => {
             </View>
           </View>
 
-          {/* ===== Organization Card ===== */}
-          <View style={styles.orgCard}>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={styles.orgLogo}>
-                <MaterialCommunityIcons
-                  name="party-popper"
-                  size={24}
-                  color={colors.primary}
-                />
-              </View>
-
+          <Text style={styles.sectionTitle}>My Events</Text>
+          {events.map((ev) => (
+            <View key={ev._id} style={styles.eventCard}>
+              <Image source={{ uri: ev.image }} style={styles.thumb} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.orgTitle}>EventHub Kuwait</Text>
-                <Text style={styles.orgType}>Event Management Company</Text>
-
-                <View style={styles.ratingRow}>
-                  <FontAwesome5 name="star" size={10} color={colors.rating} />
-                  <Text style={styles.ratingNum}>4.9</Text>
-                  <Text style={styles.ratingSub}>(1.2k reviews)</Text>
-                </View>
-
-                <Text style={styles.orgDesc}>
-                  Kuwait’s premier event management company, creating
-                  unforgettable experiences across the region. From corporate
-                  events to cultural celebrations, we bring communities together
-                  through exceptional events.
+                <Text style={styles.eventTitle}>{ev.title}</Text>
+                <Text style={styles.eventDesc}>
+                  {ev.description || ev.desc}
                 </Text>
-
-                <View style={styles.orgStatsRow}>
-                  <View style={styles.statPill}>
-                    <MaterialIcons name="event" size={14} color={colors.text} />
-                    <Text style={styles.statText}>500+{"  "}Events</Text>
-                  </View>
-                  <View style={styles.statPill}>
-                    <MaterialCommunityIcons
-                      name="account-group"
-                      size={14}
-                      color={colors.text}
-                    />
-                    <Text style={styles.statText}>50k+{"  "}Attendees</Text>
-                  </View>
-
-                  <TouchableOpacity style={styles.followBtn}>
-                    <Text style={styles.followTxt}>Follow</Text>
+                <Text style={styles.dateText}>{formatDateNice(ev.date)}</Text>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    onPress={() => openEdit(ev)}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#fff" />
+                    <Text style={styles.actionText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => handleDelete(ev._id)}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#fff" />
+                    <Text style={styles.actionText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </View>
+          ))}
+        </ScrollView>
+      </View>
 
-          {/* ===== Our Events header ===== */}
-          <View style={styles.rowHeader}>
-            <Text style={styles.sectionTitle}>Our Events</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAll}>View All</Text>
+      {/* Edit Modal */}
+      <Modal visible={editModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit Event</Text>
+
+            <Text style={styles.label}>Title</Text>
+            <TextInput
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder="Enter new title"
+              placeholderTextColor={colors.muted}
+              style={styles.input}
+            />
+
+            <TouchableOpacity
+              onPress={handlePickImage}
+              style={styles.imagePicker}
+            >
+              {newImage ? (
+                <Image source={{ uri: newImage }} style={styles.previewImg} />
+              ) : (
+                <Ionicons name="image-outline" size={32} color={colors.muted} />
+              )}
             </TouchableOpacity>
-          </View>
 
-          {/* ===== Event Cards ===== */}
-          <View style={{ paddingHorizontal: 16, gap: 12 }}>
-            {events.map((ev) => (
-              <View key={ev._id} style={styles.eventCard}>
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <Image
-                    source={{
-                      uri: ev.image || "https://placehold.co/300x200/png",
-                    }}
-                    style={styles.thumb}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.eventTitle} numberOfLines={1}>
-                      {ev.title}
-                    </Text>
-                    <Text style={styles.eventDesc} numberOfLines={3}>
-                      {ev.description || ev.desc}
-                    </Text>
-                    <View style={styles.metaRow}>
-                      <MaterialIcons
-                        name="event"
-                        size={14}
-                        color={colors.muted}
-                      />
-                      <Text style={styles.metaTxt}>
-                        {ev.date ? formatDateNice(ev.date) : "—"}
-                      </Text>
-                      <View style={styles.dot} />
-                      <Ionicons
-                        name="time-outline"
-                        size={14}
-                        color={colors.muted}
-                      />
-                      <Text style={styles.metaTxt}>{ev.time || "—"}</Text>
-                    </View>
-                  </View>
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              value={newDescription}
+              onChangeText={setNewDescription}
+              placeholder="Update event description..."
+              placeholderTextColor={colors.muted}
+              multiline
+              style={styles.textArea}
+            />
 
-                  <TouchableOpacity style={styles.bookmarkBtn}>
-                    <MaterialCommunityIcons
-                      name="bookmark-outline"
-                      size={18}
-                      color={colors.muted}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* ===== CTA ===== */}
-          <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-            <View style={styles.ctaCard}>
-              <View style={styles.ctaCircle}>
-                <Ionicons name="add" size={24} color={colors.text} />
-              </View>
-              <Text style={styles.ctaTitle}>Create New Event</Text>
-              <Text style={styles.ctaDesc}>
-                Share your amazing events with the Kuwait community
-              </Text>
-
+            <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={styles.ctaBtn}
-                onPress={() => {
-                  router.push("/createEvent");
-                }}
+                style={[
+                  styles.modalBtn,
+                  { backgroundColor: colors.surfaceAlt },
+                ]}
+                onPress={() => setEditModalVisible(false)}
               >
-                <Text style={styles.ctaBtnTxt}>Get Started</Text>
+                <Text style={{ color: colors.muted }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                onPress={handleSaveChanges}
+              >
+                <Text style={{ color: "#fff", fontWeight: "800" }}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </ScrollView>
-      </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-// ===== Styles =====
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.bg },
-  container: { flex: 1, backgroundColor: colors.bg },
-  scroll: { flex: 1, backgroundColor: colors.bg },
-
+  container: { flex: 1 },
+  scroll: { padding: 16 },
   topHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   appTitle: { color: colors.heading, fontSize: 22, fontWeight: "800" },
   circleBtn: {
@@ -322,153 +348,114 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-  },
+  avatar: { width: 32, height: 32, borderRadius: 16 },
   avatarPlaceholder: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  orgCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    marginHorizontal: 16,
-    padding: 14,
   },
-  orgLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  orgTitle: { color: colors.text, fontSize: 16, fontWeight: "800" },
-  orgType: {
-    color: colors.primary,
-    fontWeight: "700",
-    marginTop: 2,
-    fontSize: 12,
-  },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-  },
-  ratingNum: { color: colors.text, fontWeight: "800", fontSize: 12 },
-  ratingSub: { color: colors.muted, fontSize: 12 },
-  orgDesc: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 8 },
-  orgStatsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 10,
-    flexWrap: "wrap",
-  },
-  statPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.surfaceAlt,
-    borderColor: colors.border,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  statText: { color: colors.text, fontSize: 12, fontWeight: "600" },
-  followBtn: {
-    marginLeft: "auto",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-  },
-  followTxt: { color: "#0B1416", fontWeight: "800" },
-
-  rowHeader: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionTitle: { color: colors.heading, fontSize: 16, fontWeight: "800" },
-  viewAll: { color: colors.primary, fontWeight: "700" },
-
-  eventCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-  },
-  thumb: {
-    width: 76,
-    height: 76,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceAlt,
-  },
-  eventTitle: { color: colors.text, fontSize: 15, fontWeight: "800" },
-  eventDesc: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
-  metaTxt: { color: colors.muted, fontSize: 12 },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.muted },
-
-  bookmarkBtn: { padding: 6, alignSelf: "flex-start" },
-
-  ctaCard: {
-    backgroundColor: colors.primaryDim,
-    borderRadius: 18,
-    padding: 18,
-    alignItems: "center",
-    gap: 10,
-  },
-  ctaCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaTitle: {
-    color: colors.text,
+  sectionTitle: {
+    color: colors.heading,
     fontSize: 16,
     fontWeight: "800",
-    marginTop: 2,
+    marginBottom: 10,
   },
-  ctaDesc: { color: colors.text, opacity: 0.9, textAlign: "center" },
-  ctaBtn: {
-    marginTop: 6,
+  eventCard: {
     backgroundColor: colors.surface,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 999,
+    flexDirection: "row",
+    gap: 12,
+    padding: 10,
+    marginBottom: 12,
   },
-  ctaBtnTxt: { color: colors.text, fontWeight: "800" },
+  thumb: { width: 90, height: 90, borderRadius: 10 },
+  eventTitle: { color: colors.text, fontWeight: "700", fontSize: 15 },
+  eventDesc: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  dateText: { color: colors.primary, fontSize: 12, marginTop: 4 },
+  actionRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+  editBtn: {
+    flexDirection: "row",
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 6,
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    backgroundColor: "#D64545",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 6,
+  },
+  actionText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 18,
+    width: "100%",
+  },
+  modalTitle: {
+    color: colors.heading,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 12,
+  },
+  input: {
+    backgroundColor: colors.surfaceAlt,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    color: colors.text,
+    padding: 10,
+    marginBottom: 10,
+  },
+  imagePicker: {
+    height: 150,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  previewImg: { width: "100%", height: "100%", borderRadius: 12 },
+  label: { color: colors.text, fontWeight: "700", marginBottom: 6 },
+  textArea: {
+    backgroundColor: colors.surfaceAlt,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    color: colors.text,
+    padding: 10,
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 12,
+  },
+  modalBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
 });
 
-export default OrgnaizerHomeScreen;
+export default OrganizerHomeScreen;

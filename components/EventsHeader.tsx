@@ -1,7 +1,8 @@
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useState } from "react";
+import * as Location from "expo-location";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -18,10 +19,22 @@ import {
 
  from "react-native";
 import { CategoryItem, fetchCategories } from "../api/categories";
-import { EventItem, fetchEvents } from "../api/events";
+import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
+
+// Extend your EventItem so TS knows these might exist
+type EventItem = BaseEventItem & {
+  placeName?: string;
+  address?: string;
+  location:
+    | string
+    | {
+        type?: "Point";
+        coordinates?: [number, number]; // [lng, lat]
+      };
+};
 
 export default function EventsScreen({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
@@ -66,13 +79,25 @@ export default function EventsScreen({ userId }: { userId: string }) {
   });
 
   const {
-    data: events,
+    data: eventsRaw,
     isLoading,
     error,
   } = useQuery({
     queryKey: ["events"],
     queryFn: fetchEvents,
   });
+
+  const events = (eventsRaw as EventItem[] | undefined) ?? [];
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((ev) => {
+      const matchSearch = ev.title
+        ?.toLowerCase()
+        .includes(searchText.toLowerCase());
+      const matchCat = selectedCat === "all" || ev.categoryId === selectedCat;
+      return matchSearch && matchCat;
+    });
+  }, [events, searchText, selectedCat]);
 
   const openEvent = (ev: EventItem) => {
     setSelectedEvent(ev);
@@ -91,40 +116,105 @@ export default function EventsScreen({ userId }: { userId: string }) {
     },
   });
 
-  // Mutation للحذف
-  const removeMutation = useMutation({
-    mutationFn: removeEngagementApi,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["engagements"] });
-    },
-    onError: (err, eventId, context) => {
-      console.error("Error removing engagement:", err);
-      setSavedEvents((prev) => [...prev, eventId]);
-    },
-  });
+  // --------------- Reverse Geocoding Cache ---------------
+  const [locationCache, setLocationCache] = useState<Record<string, string>>(
+    {}
+  );
+  const pendingKeys = useRef<Set<string>>(new Set());
 
-  const toggleBookmark = (eventId: string) => {
+  const coordKey = (lng: number, lat: number) =>
+    `${lat.toFixed(6)},${lng.toFixed(6)}`;
+
+  const extractCoords = (ev: EventItem): [number, number] | null => {
+    if (typeof ev.location === "string") return null;
+    const c = ev.location?.coordinates;
+    if (
+      Array.isArray(c) &&
+      c.length === 2 &&
+      Number.isFinite(c[0]) &&
+      Number.isFinite(c[1])
+    ) {
+      return [c[0], c[1]]; // [lng, lat]
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    (async () => {
+      // optional permission
+      await Location.requestForegroundPermissionsAsync().catch(() => {});
+      for (const ev of filteredEvents) {
+        // if event already has human-readable fields, skip
+        if ((ev as any).placeName || (ev as any).address) continue;
+        const coords = extractCoords(ev);
+        if (!coords) continue;
+
+        const [lng, lat] = coords;
+        const key = coordKey(lng, lat);
+        if (locationCache[key] || pendingKeys.current.has(key)) continue;
+
+        pendingKeys.current.add(key);
+        try {
+          const results = await Location.reverseGeocodeAsync({
+            latitude: lat,
+            longitude: lng,
+          });
+          const best = results?.[0];
+          const parts = [
+            best?.name,
+            best?.street,
+            best?.city || best?.subregion,
+            best?.region,
+            best?.country,
+          ].filter(Boolean);
+          const label =
+            parts.join(", ").trim() || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setLocationCache((m) => ({ ...m, [key]: label }));
+        } catch {
+          setLocationCache((m) => ({
+            ...m,
+            [key]: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+          }));
+        } finally {
+          pendingKeys.current.delete(key);
+        }
+      }
+    })();
+  }, [filteredEvents, locationCache]);
+
+  const readableLocation = (ev: EventItem) => {
+    if ((ev as any).placeName) return String((ev as any).placeName);
+    if ((ev as any).address) return String((ev as any).address);
+    const coords = extractCoords(ev);
+    if (coords) {
+      const [lng, lat] = coords;
+      const key = coordKey(lng, lat);
+      return locationCache[key] ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+    if (typeof ev.location === "string") return ev.location;
+    return "Unknown location";
+  };
+
+  // حفظ/حذف الايفنت
+  const toggleBookmark = async (eventId: string) => {
     const isSaved = savedEvents.includes(eventId);
-
+    // Optimistic UI
     setSavedEvents((prev) =>
       isSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
     );
-
-    if (isSaved) {
-      removeMutation.mutate(eventId);
-    } else {
-      saveMutation.mutate(eventId);
+    try {
+      if (isSaved) {
+        await removeEngagementApi(eventId);
+      } else {
+        await saveEngagementApi(eventId);
+      }
+    } catch (err) {
+      console.error("Error toggling engagement:", err);
+      // revert
+      if (isSaved) setSavedEvents((prev) => [...prev, eventId]);
+      else setSavedEvents((prev) => prev.filter((id) => id !== eventId));
     }
   };
-  // ===============================================
-
-  const filteredEvents = events?.filter((ev: EventItem) => {
-    const matchSearch = ev.title
-      .toLowerCase()
-      .includes(searchText.toLowerCase());
-    const matchCat = selectedCat === "all" || ev.categoryId === selectedCat;
-    return matchSearch && matchCat;
-  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#121212" }}>
@@ -133,7 +223,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 90 }}
       >
-        {/* العنوان */}
         <View style={styles.topRow}>
           
           <View style={styles.rightIcons}>
@@ -141,7 +230,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
           </View>
         </View>
 
-        {/* البحث */}
         <View style={styles.searchBox}>
           <Ionicons
             name="search"
@@ -158,7 +246,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
           />
         </View>
 
-        {/* الكاتيجوري */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -201,7 +288,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
               onPress={() => setSelectedCat(c._id)}
             >
               <MaterialCommunityIcons
-                name={c.icon as any}
+                name={((c as any).icon as any) ?? "shape-outline"}
                 size={28}
                 color={selectedCat === c._id ? "#00d4ff" : "#aaa"}
               />
@@ -211,29 +298,20 @@ export default function EventsScreen({ userId }: { userId: string }) {
                   selectedCat === c._id && { color: "#00d4ff" },
                 ]}
               >
-                {c.name}
+                {c.name as any}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         <Text style={styles.upcomingTitle}>Upcoming Events</Text>
-
         {isLoading && <ActivityIndicator color="#00d4ff" size="large" />}
         {error && <Text style={{ color: "red" }}>Failed to load events.</Text>}
 
-        {/* عرض الأحداث */}
-        {filteredEvents?.map((ev: EventItem) => {
-          const locationText =
-            typeof ev.location === "string"
-              ? ev.location
-              : ev.location?.coordinates
-              ? `${ev.location.coordinates[1]}, ${ev.location.coordinates[0]}`
-              : "Unknown location";
-
-          const categoryName = categories?.find(
+        {filteredEvents.map((ev) => {
+          const catName = categories?.find(
             (c: CategoryItem) => c._id === ev.categoryId
-          )?.name;
+          )?.name as string | undefined;
 
           return (
             <TouchableOpacity
@@ -258,14 +336,14 @@ export default function EventsScreen({ userId }: { userId: string }) {
                   </TouchableOpacity>
                 </View>
 
-                {categoryName && (
+                {!!catName && (
                   <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText}>{categoryName}</Text>
+                    <Text style={styles.categoryBadgeText}>{catName}</Text>
                   </View>
                 )}
 
                 <Text style={styles.eventDesc} numberOfLines={2}>
-                  {ev.desc}
+                  {(ev as any).description ?? ev.desc}
                 </Text>
 
                 <View style={styles.eventDetails}>
@@ -290,7 +368,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
                       size={14}
                       color="#00d4ff"
                     />
-                    <Text style={styles.detailText}>{locationText}</Text>
+                    <Text style={styles.detailText}>
+                      {readableLocation(ev)}
+                    </Text>
                   </View>
                 </View>
 
@@ -303,7 +383,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
           );
         })}
 
-        {/* المودال */}
         <Modal visible={modalVisible} animationType="slide" transparent>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
@@ -314,7 +393,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
                     style={styles.modalImage}
                   />
                   <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
-                  <Text style={styles.modalDesc}>{selectedEvent.desc}</Text>
+                  <Text style={styles.modalDesc}>
+                    {(selectedEvent as any).description ?? selectedEvent.desc}
+                  </Text>
                   <Text style={styles.modalInfo}>
                     🗓{" "}
                     {selectedEvent.date
@@ -326,12 +407,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
                       : "Unknown time"}
                   </Text>
                   <Text style={styles.modalInfo}>
-                    📍{" "}
-                    {typeof selectedEvent.location === "string"
-                      ? selectedEvent.location
-                      : selectedEvent.location?.coordinates
-                      ? `${selectedEvent.location.coordinates[1]}, ${selectedEvent.location.coordinates[0]}`
-                      : "Unknown location"}
+                    📍 {readableLocation(selectedEvent)}
                   </Text>
                 </>
               ) : (
@@ -354,7 +430,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
