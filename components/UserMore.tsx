@@ -1,6 +1,6 @@
-import { getOrgProfile } from "@/api/organizer";
+import { getProfile } from "@/api/user";
 import { COLORS } from "@/assets/style/color";
-import { OrganizerInfo } from "@/types/OrganizerInfo";
+import { UserInfo } from "@/types/UserInfo";
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
@@ -48,7 +48,7 @@ const PressableCard = ({ left, title, value, onPress }: ItemProps) => {
 
 export default function MoreScreen() {
   const queryClient = useQueryClient();
-  const [orgInfoState, setOrgInfoState] = React.useState({
+  const [userInfoState, setUserInfoState] = React.useState({
     name: "",
     rating: 0,
     image: "", // local URI from picker
@@ -65,9 +65,9 @@ export default function MoreScreen() {
     })();
   }, []);
 
-  const { data, isLoading, isError, error } = useQuery<OrganizerInfo>({
-    queryKey: ["organizerProfile"],
-    queryFn: getOrgProfile,
+  const { data, isLoading, isError, error } = useQuery<UserInfo>({
+    queryKey: ["userProfile"],
+    queryFn: getProfile,
   });
 
   const { mutate, isPending } = useMutation({
@@ -77,8 +77,8 @@ export default function MoreScreen() {
       return Promise.resolve();
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["organizerProfile"] });
-      setOrgInfoState(prev => ({ ...prev, image: "" }));
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      setUserInfoState(prev => ({ ...prev, image: "" }));
     },
     onError: (err) => {
       console.error("upload error:", err);
@@ -94,12 +94,12 @@ export default function MoreScreen() {
     });
 
     if (!res.canceled) {
-      setOrgInfoState((prev) => ({ ...prev, image: res.assets[0].uri })); // "file://..." URI
+      setUserInfoState((prev) => ({ ...prev, image: res.assets[0].uri })); // "file://..." URI
     }
   };
 
   const handleUpdateProfile = () => {
-    if (orgInfoState.image) mutate(orgInfoState.image);
+    if (userInfoState.image) mutate(userInfoState.image);
   };
 
   if (isLoading) {
@@ -127,8 +127,8 @@ export default function MoreScreen() {
     );
   }
 
-  const imageUri = orgInfoState.image || data.image;
-
+  const imageUri = userInfoState.image;
+  const role = data.isOrganizer ? "Organizer" : "User";
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -140,11 +140,7 @@ export default function MoreScreen() {
           <Pressable onPress={pickImage}>
             <Image source={{ uri: imageUri }} style={styles.avatar} />
           </Pressable>
-          <Text style={styles.company}>{data?.name}</Text>
-          <View style={styles.ratingRow}>
-            <Ionicons name="star" size={14} color="#FBBF24" />
-            <Text style={styles.rating}>{data?.rating}</Text>
-          </View>
+          <Text style={styles.company}>{data?.username}</Text>
         </View>
 
         {/* Items */}
@@ -170,7 +166,7 @@ export default function MoreScreen() {
         <PressableCard
           left={<Ionicons name="language" size={22} color={COLORS.primary} />}
           title="Language"
-          value="English"
+          value={role}
         />
         {/* Help & Support */}
         <PressableCard
