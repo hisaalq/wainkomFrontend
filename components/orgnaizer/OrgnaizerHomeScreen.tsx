@@ -1,4 +1,4 @@
-import { deleteEventApi, fetchEventsApi, updateEventApi, fetchEventsByOrganizer } from "@/api/events";
+import { deleteEventApi, fetchEventsApi, updateEventApi } from "@/api/events";
 import { getOrgProfile } from "@/api/organizer";
 import { deleteToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
@@ -46,7 +46,7 @@ type EventDoc = {
   categoryId?: string;
 };
 
-const OrgnaizerHomeScreen = () => {
+const OrganizerHomeScreen = () => {
   const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
   const [events, setEvents] = useState<EventDoc[]>([]);
   const [orgImage, setOrgImage] = useState<string | undefined>(undefined);
@@ -92,6 +92,11 @@ const OrgnaizerHomeScreen = () => {
 
   useEffect(() => {
     loadData();
+    const interval = setInterval(() => {
+      // refresh periodically (optional)
+      loadData();
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const openEdit = (event: EventDoc) => {
@@ -101,68 +106,6 @@ const OrgnaizerHomeScreen = () => {
     setNewImage(event.image);
     setEditModalVisible(true);
   };
-  // Refresh data periodically or when component mounts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("Refreshing data...");
-      loadData();
-    }, 5000); // Refresh every 5 seconds for testing
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundd} />
-      <View style={styles.container}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={{ paddingBottom: 16 }} // <= small, no white gap
-          showsVerticalScrollIndicator={false}
-        >
-          {/* ===== Top Header ===== */}
-          <View style={styles.topHeader}>
-            <Text style={styles.appTitle}>EventHub Kuwait</Text>
-
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
-              <TouchableOpacity style={styles.circleBtn} onPress={() => router.push("/createEvent")}>
-                <Ionicons name="add" size={18} color={colors.text} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.circleBtn}
-                onPress={() => Alert.alert("Notifications", "No notifications yet.")}
-              >
-                <Ionicons name="notifications-outline" size={18} color={colors.text} />
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => router.push("/organizer/profile")}>
-                {orgImage ? (
-                  <Image
-                    source={{ uri: orgImage }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={18} color={colors.muted} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* ===== Organization Card ===== */}
-          <View style={styles.orgCard}>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={styles.orgLogo}>
-                <MaterialCommunityIcons
-                  name="party-popper"
-                  size={24}
-                  color={colors.primary}
-                />
-              </View>
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -243,128 +186,150 @@ const OrgnaizerHomeScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: 30 }}
-      >
-        <View style={styles.topHeader}>
-          <Text style={styles.appTitle}>Organizer Dashboard</Text>
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <TouchableOpacity
-              style={styles.circleBtn}
-              onPress={() => router.push("/createEvent")}
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={COLORS.backgroundd}
+      />
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={{ paddingBottom: 16 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ===== Top Header ===== */}
+          <View style={styles.topHeader}>
+            <Text style={styles.appTitle}>EventHub Kuwait</Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
-              <Ionicons name="add" size={18} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.circleBtn} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={18} color={colors.text} />
-            </TouchableOpacity>
-            <Image
-              source={{ uri: orgImage || "https://i.pravatar.cc/100" }}
-              style={styles.avatar}
-            />
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>My Events</Text>
-
-        {events.map((ev) => (
-          <View key={ev._id} style={styles.eventCard}>
-            <Image source={{ uri: ev.image }} style={styles.thumb} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.eventTitle}>{ev.title}</Text>
-              <Text style={styles.eventDesc}>{ev.description || ev.desc}</Text>
-              <Text style={styles.dateText}>{formatDateNice(ev.date)}</Text>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={styles.editBtn}
-                  onPress={() => openEdit(ev)}
-                >
-                  <Ionicons name="create-outline" size={16} color="#fff" />
-                  <Text style={styles.actionText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDelete(ev._id)}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#fff" />
-                  <Text style={styles.actionText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ))}
-
-        {/* Edit Modal */}
-        <Modal visible={editModalVisible} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Edit Event</Text>
-
-              <Text style={styles.label}>Title</Text>
-              <TextInput
-                value={newTitle}
-                onChangeText={setNewTitle}
-                placeholder="Enter new title"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
-              />
-
               <TouchableOpacity
-                onPress={handlePickImage}
-                style={styles.imagePicker}
+                style={styles.circleBtn}
+                onPress={() => router.push("/createEvent")}
               >
-                {newImage ? (
-                  <Image source={{ uri: newImage }} style={styles.previewImg} />
+                <Ionicons name="add" size={18} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.circleBtn}
+                onPress={() =>
+                  Alert.alert("Notifications", "No notifications yet.")
+                }
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={18}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push("/organizer/profile")}
+              >
+                {orgImage ? (
+                  <Image source={{ uri: orgImage }} style={styles.avatar} />
                 ) : (
-                  <Ionicons
-                    name="image-outline"
-                    size={32}
-                    color={colors.muted}
-                  />
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={18} color={colors.muted} />
+                  </View>
                 )}
               </TouchableOpacity>
-
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                value={newDescription}
-                onChangeText={setNewDescription}
-                placeholder="Update event description..."
-                placeholderTextColor={colors.muted}
-                multiline
-                style={styles.textArea}
-              />
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.modalBtn,
-                    { backgroundColor: colors.surfaceAlt },
-                  ]}
-                  onPress={() => setEditModalVisible(false)}
-                >
-                  <Text style={{ color: colors.muted }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalBtn, { backgroundColor: colors.primary }]}
-                  onPress={handleSaveChanges}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "800" }}>Save</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
-        </Modal>
-      </ScrollView>
+
+          <Text style={styles.sectionTitle}>My Events</Text>
+          {events.map((ev) => (
+            <View key={ev._id} style={styles.eventCard}>
+              <Image source={{ uri: ev.image }} style={styles.thumb} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.eventTitle}>{ev.title}</Text>
+                <Text style={styles.eventDesc}>
+                  {ev.description || ev.desc}
+                </Text>
+                <Text style={styles.dateText}>{formatDateNice(ev.date)}</Text>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    onPress={() => openEdit(ev)}
+                  >
+                    <Ionicons name="create-outline" size={16} color="#fff" />
+                    <Text style={styles.actionText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={() => handleDelete(ev._id)}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#fff" />
+                    <Text style={styles.actionText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Edit Modal */}
+      <Modal visible={editModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit Event</Text>
+
+            <Text style={styles.label}>Title</Text>
+            <TextInput
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder="Enter new title"
+              placeholderTextColor={colors.muted}
+              style={styles.input}
+            />
+
+            <TouchableOpacity
+              onPress={handlePickImage}
+              style={styles.imagePicker}
+            >
+              {newImage ? (
+                <Image source={{ uri: newImage }} style={styles.previewImg} />
+              ) : (
+                <Ionicons name="image-outline" size={32} color={colors.muted} />
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              value={newDescription}
+              onChangeText={setNewDescription}
+              placeholder="Update event description..."
+              placeholderTextColor={colors.muted}
+              multiline
+              style={styles.textArea}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.modalBtn,
+                  { backgroundColor: colors.surfaceAlt },
+                ]}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={{ color: colors.muted }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                onPress={handleSaveChanges}
+              >
+                <Text style={{ color: "#fff", fontWeight: "800" }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1 },
   scroll: { padding: 16 },
   topHeader: {
     flexDirection: "row",
@@ -384,6 +349,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatar: { width: 32, height: 32, borderRadius: 16 },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   sectionTitle: {
     color: colors.heading,
     fontSize: 16,
@@ -480,11 +455,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 12,
   },
-  modalBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
+  modalBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
 });
 
-export default OrgnaizerHomeScreen;
+export default OrganizerHomeScreen;

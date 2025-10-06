@@ -21,6 +21,7 @@ import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
+
 // Extend your EventItem so TS knows these might exist
 type EventItem = BaseEventItem & {
   placeName?: string;
@@ -124,13 +125,14 @@ export default function EventsScreen({ userId }: { userId: string }) {
 
   useEffect(() => {
     (async () => {
-      // Ask permission once (best-effort; reverseGeocodeAsync works without explicit ask on some platforms)
+      // optional permission
       await Location.requestForegroundPermissionsAsync().catch(() => {});
       for (const ev of filteredEvents) {
         // if event already has human-readable fields, skip
         if ((ev as any).placeName || (ev as any).address) continue;
         const coords = extractCoords(ev);
         if (!coords) continue;
+
         const [lng, lat] = coords;
         const key = coordKey(lng, lat);
         if (locationCache[key] || pendingKeys.current.has(key)) continue;
@@ -151,7 +153,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
           ].filter(Boolean);
           const label =
             parts.join(", ").trim() || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-
           setLocationCache((m) => ({ ...m, [key]: label }));
         } catch {
           setLocationCache((m) => ({
@@ -168,28 +169,23 @@ export default function EventsScreen({ userId }: { userId: string }) {
   const readableLocation = (ev: EventItem) => {
     if ((ev as any).placeName) return String((ev as any).placeName);
     if ((ev as any).address) return String((ev as any).address);
-
     const coords = extractCoords(ev);
     if (coords) {
       const [lng, lat] = coords;
       const key = coordKey(lng, lat);
       return locationCache[key] ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     }
-
-    // if backend sent a string location, just show it
     if (typeof ev.location === "string") return ev.location;
-
     return "Unknown location";
   };
+
   // حفظ/حذف الايفنت
   const toggleBookmark = async (eventId: string) => {
     const isSaved = savedEvents.includes(eventId);
-
-    // Optimistically update UI
+    // Optimistic UI
     setSavedEvents((prev) =>
       isSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
     );
-
     try {
       if (isSaved) {
         await removeEngagementApi(eventId);
@@ -198,19 +194,11 @@ export default function EventsScreen({ userId }: { userId: string }) {
       }
     } catch (err) {
       console.error("Error toggling engagement:", err);
-      // revert UI state if remove fails
+      // revert
       if (isSaved) setSavedEvents((prev) => [...prev, eventId]);
       else setSavedEvents((prev) => prev.filter((id) => id !== eventId));
     }
   };
-
-  const filteredEvents = events?.filter((ev: EventItem) => {
-    const matchSearch = ev.title
-      .toLowerCase()
-      .includes(searchText.toLowerCase());
-    const matchCat = selectedCat === "all" || ev.categoryId === selectedCat;
-    return matchSearch && matchCat;
-  });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#121212" }}>
@@ -311,7 +299,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
         </ScrollView>
 
         <Text style={styles.upcomingTitle}>Upcoming Events</Text>
-
         {isLoading && <ActivityIndicator color="#00d4ff" size="large" />}
         {error && <Text style={{ color: "red" }}>Failed to load events.</Text>}
 

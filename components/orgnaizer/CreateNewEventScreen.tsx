@@ -1,8 +1,6 @@
-// app/CreateNewEventScreen.tsx
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { createEventApi } from "@/api/events";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
@@ -28,13 +26,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const GOOGLE_PLACES_KEY = "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ";
-// <-- API
-import { useRouter } from "expo-router";
-// If you need token directly, your axios instance already injects it.
-
-import { CategoryItem, fetchCategories } from "@/api/categories";
-import { createEventApi } from "@/api/events";
-
 
 const colors = {
   bg: "#0F1115",
@@ -64,11 +55,24 @@ function formatTime(d: Date | null) {
   h = h % 12 || 12;
   return `${String(h).padStart(2, "0")}:${m} ${ampm}`;
 }
+function isSameCalendarDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+function combineDateAndTime(date: Date, time: Date) {
+  const d = new Date(date);
+  d.setHours(time.getHours(), time.getMinutes(), 0, 0);
+  return d;
+}
 function parseLngLat(text: string): [number, number] | null {
   const parts = text.split(",").map((s) => Number(s.trim()));
   if (parts.length !== 2 || !parts.every((n) => Number.isFinite(n)))
     return null;
   const [a, b] = parts;
+  // If user typed "lat,lng" convert to [lng,lat]
   return Math.abs(a) <= 90 && Math.abs(b) <= 180
     ? ([b, a] as [number, number])
     : ([a, b] as [number, number]);
@@ -121,7 +125,7 @@ function PlaceAutocomplete({
       try {
         setLoading(true);
         const url =
-          `https://maps.googleapis.com/maps/api/place/autocomplete/json` +
+          "https://maps.googleapis.com/maps/api/place/autocomplete/json" +
           `?input=${encodeURIComponent(debounced)}` +
           `&key=${GOOGLE_PLACES_KEY}` +
           `&components=country:kw`;
@@ -157,7 +161,7 @@ function PlaceAutocomplete({
     try {
       setLoading(true);
       const url =
-        `https://maps.googleapis.com/maps/api/place/details/json` +
+        "https://maps.googleapis.com/maps/api/place/details/json" +
         `?place_id=${encodeURIComponent(place_id)}` +
         `&key=${GOOGLE_PLACES_KEY}` +
         `&fields=geometry/location,name,formatted_address,place_id`;
@@ -202,6 +206,7 @@ function PlaceAutocomplete({
       <Pressable style={styles.overlay} onPress={onClose} />
       <View style={[styles.modalCard, { width: "90%", maxWidth: 420 }]}>
         <Text style={styles.modalTitle}>Search a place (Kuwait)</Text>
+
         <View style={[styles.inputWrap, { marginTop: 8 }]}>
           <Ionicons name="search" size={18} color={colors.muted} />
           <TextInput
@@ -275,9 +280,11 @@ export default function CreateNewEventScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<Date | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
+
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [catModal, setCatModal] = useState(false);
   const [locModal, setLocModal] = useState(false);
+
   const [pickerMode, setPickerMode] = useState<PickerMode>("none");
   const [tempDate, setTempDate] = useState<Date>(new Date());
   const isPickerOpen = pickerMode !== "none";
@@ -288,7 +295,10 @@ export default function CreateNewEventScreen() {
   };
   const openTime = () => {
     if (!date) {
-      Alert.alert("Select date first", "Please choose the event date before picking time.");
+      Alert.alert(
+        "Select date first",
+        "Please choose the event date before picking time."
+      );
       return;
     }
     setPickerMode("time");
@@ -302,7 +312,6 @@ export default function CreateNewEventScreen() {
   const cancelPicker = () => setPickerMode("none");
   const confirmPicker = () => {
     if (pickerMode === "date") {
-      // Prevent selecting past dates
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const picked = new Date(tempDate);
@@ -314,7 +323,6 @@ export default function CreateNewEventScreen() {
       setDate(tempDate);
     }
     if (pickerMode === "time") {
-      // If selected date is today, ensure time is in the future
       if (date && isSameCalendarDay(date, new Date())) {
         const now = new Date();
         const candidate = new Date();
@@ -372,11 +380,13 @@ export default function CreateNewEventScreen() {
         );
         return;
       }
-      // Validate combined date-time is in the future
       const scheduledAt = combineDateAndTime(date, time);
       const now = new Date();
       if (scheduledAt <= now) {
-        Alert.alert("Invalid schedule", "Event date and time must be in the future.");
+        Alert.alert(
+          "Invalid schedule",
+          "Event date and time must be in the future."
+        );
         return;
       }
       const coords = parseLngLat(locationText);
@@ -400,7 +410,7 @@ export default function CreateNewEventScreen() {
         time: formatTime(time),
         duration,
         categoryId,
-        // @ts-ignore
+        // @ts-ignore optional extras supported server-side
         placeName: placeName || undefined,
         // @ts-ignore
         address: address || undefined,
@@ -507,15 +517,21 @@ export default function CreateNewEventScreen() {
                 size={18}
                 color={colors.muted}
               />
-              <TouchableOpacity style={FORMS.inputRow} onPress={() => setCatModal(true)}>
-
-              <Text style={[styles.input, { paddingVertical: 12 }]}>
-                {categories.find((c) => c._id === categoryId)?.name ??
-                  "Select a category"}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color={colors.muted} />
-              </TouchableOpacity>
-            </View>
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={[styles.input, { paddingVertical: 12 }]}>
+                  {categories.find((c) => c._id === categoryId)?.name ??
+                    "Select a category"}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={colors.muted} />
+              </View>
+            </TouchableOpacity>
 
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
@@ -649,17 +665,7 @@ export default function CreateNewEventScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.bottomBar}>
-        <View style={styles.tabItem}>
-          <Ionicons name="home" size={16} color={colors.text} />
-          <Text style={styles.tabText}>Home</Text>
-        </View>
-        <View style={styles.tabItem}>
-          <Ionicons name="ellipsis-horizontal" size={16} color={colors.muted} />
-          <Text style={[styles.tabText, { color: colors.muted }]}>More</Text>
-        </View>
-      </View>
-
+      {/* Category Modal */}
       <Modal
         visible={catModal}
         transparent
@@ -705,6 +711,7 @@ export default function CreateNewEventScreen() {
         </View>
       </Modal>
 
+      {/* Place Autocomplete */}
       <PlaceAutocomplete
         visible={locModal}
         onClose={() => setLocModal(false)}
@@ -715,6 +722,7 @@ export default function CreateNewEventScreen() {
         }}
       />
 
+      {/* Date/Time Picker */}
       <Modal
         transparent
         visible={isPickerOpen}
@@ -734,7 +742,15 @@ export default function CreateNewEventScreen() {
             themeVariant="dark"
             minuteInterval={1}
             is24Hour={false}
-            minimumDate={pickerMode === "date" ? (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })() : undefined}
+            minimumDate={
+              pickerMode === "date"
+                ? (() => {
+                    const d = new Date();
+                    d.setHours(0, 0, 0, 0);
+                    return d;
+                  })()
+                : undefined
+            }
             style={{ alignSelf: "stretch" }}
           />
           <View style={styles.modalActions}>
@@ -760,6 +776,7 @@ const styles = StyleSheet.create({
   topSpace: { paddingTop: 6, paddingHorizontal: 16, paddingBottom: 8 },
   headerTitle: { color: colors.heading, fontSize: 18, fontWeight: "800" },
   headerSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
+
   uploadBox: {
     marginHorizontal: 16,
     marginTop: 8,
@@ -794,6 +811,7 @@ const styles = StyleSheet.create({
     borderColor: "#000",
   },
   previewBtnText: { color: colors.text, fontWeight: "700", fontSize: 12 },
+
   form: { paddingHorizontal: 16 },
   label: {
     color: colors.text,
@@ -813,7 +831,9 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, color: colors.text, fontSize: 14 },
   inputText: { flex: 1, fontSize: 14 },
+
   row: { flexDirection: "row", marginTop: 2 },
+
   publishBtn: {
     marginHorizontal: 16,
     marginTop: 22,
@@ -827,21 +847,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   publishText: { color: "#fff", fontWeight: "900", fontSize: 15 },
-  bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 64,
-    backgroundColor: colors.surfaceAlt,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  tabItem: { alignItems: "center", gap: 4 },
-  tabText: { color: colors.text, fontSize: 12 },
+
+  // Modals
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.45)",
