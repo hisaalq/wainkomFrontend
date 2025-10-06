@@ -1,18 +1,15 @@
-
-// app/create-event.tsx
-import { BOTTOM_BAR, BUTTONS, FORMS, HEADER, UPLOAD } from "@/assets/style/stylesheet";
-
-// app/CreateNewEventScreen.tsx
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { createEventApi } from "@/api/events";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -28,11 +25,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { createEventApi } from "@/api/events"; // <-- API
-import { useRouter } from "expo-router";
-// If you need token directly, your axios instance already injects it.
-
-import { CategoryItem, fetchCategories } from "@/api/categories";
+// Google Places key from env or app.json
+const GOOGLE_PLACES_KEY =
+  process.env.EXPO_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 
 
 const colors = {
@@ -63,55 +58,236 @@ function formatTime(d: Date | null) {
   h = h % 12 || 12;
   return `${String(h).padStart(2, "0")}:${m} ${ampm}`;
 }
-function parseLngLat(text: string): [number, number] | null {
-  const parts = text.split(",").map((s) => Number(s.trim()));
-  if (parts.length !== 2 || !parts.every((n) => Number.isFinite(n)))
-    return null;
-  const [a, b] = parts;
-  // If user typed "lat, lng", flip to [lng, lat]
-  return Math.abs(a) <= 90 && Math.abs(b) <= 180
-    ? ([b, a] as [number, number])
-    : ([a, b] as [number, number]);
-}
-
-function combineDateAndTime(dateOnly: Date, timeOnly: Date): Date {
-  const combined = new Date(dateOnly);
-  combined.setHours(timeOnly.getHours());
-  combined.setMinutes(timeOnly.getMinutes());
-  combined.setSeconds(0);
-  combined.setMilliseconds(0);
-  return combined;
-}
-
-function isSameCalendarDay(a: Date, b: Date): boolean {
+function isSameCalendarDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
 }
+function combineDateAndTime(date: Date, time: Date) {
+  const d = new Date(date);
+  d.setHours(time.getHours(), time.getMinutes(), 0, 0);
+  return d;
+}
+function parseLngLat(text: string): [number, number] | null {
+  const parts = text.split(",").map((s) => Number(s.trim()));
+  if (parts.length !== 2 || !parts.every((n) => Number.isFinite(n)))
+    return null;
+  const [a, b] = parts;
+  // If user typed "lat,lng" convert to [lng,lat]
+  return Math.abs(a) <= 90 && Math.abs(b) <= 180
+    ? ([b, a] as [number, number])
+    : ([a, b] as [number, number]);
+}
 
+type PickedPlace = {
+  lat: number;
+  lng: number;
+  name?: string;
+  address?: string;
+  placeId?: string;
+};
 
-export default function CreateEventScreen() {
-  const router = useRouter();
-  
+function useDebouncedValue<T>(value: T, delay = 250) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
+}
 
-  // ----- FORM STATE -----
+function PlaceAutocomplete({
+  visible,
+  onClose,
+  onPick,
+  initialQuery = "",
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onPick: (p: PickedPlace) => void;
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery);
+  const debounced = useDebouncedValue(query, 250);
+  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<
+    { description: string; place_id: string }[]
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setError(null);
+      if (!debounced || !visible) {
+        if (active) setSuggestions([]);
+        return;
+      }
+      try {
+        setLoading(true);
+        const url =
+          "https://maps.googleapis.com/maps/api/place/autocomplete/json" +
+          `?input=${encodeURIComponent(debounced)}` +
+          `&key=${GOOGLE_PLACES_KEY}` +
+          `&components=country:kw`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (!active) return;
+        if (json.status !== "OK" && json.status !== "ZERO_RESULTS") {
+          setError(json.error_message || json.status || "Places error");
+          setSuggestions([]);
+        } else {
+          setSuggestions(
+            json.predictions?.map((p: any) => ({
+              description: p.description,
+              place_id: p.place_id,
+            })) ?? []
+          );
+        }
+      } catch (e: any) {
+        if (active) {
+          setError(e?.message || "Network error");
+          setSuggestions([]);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [debounced, visible]);
+
+  const pickByPlaceId = async (place_id: string) => {
+    try {
+      setLoading(true);
+      const url =
+        "https://maps.googleapis.com/maps/api/place/details/json" +
+        `?place_id=${encodeURIComponent(place_id)}` +
+        `&key=${GOOGLE_PLACES_KEY}` +
+        `&fields=geometry/location,name,formatted_address,place_id`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.status !== "OK") {
+        Alert.alert(
+          "Error",
+          json.error_message || json.status || "Place details error"
+        );
+        return;
+      }
+      const r = json.result;
+      const lat = r.geometry?.location?.lat;
+      const lng = r.geometry?.location?.lng;
+      if (typeof lat !== "number" || typeof lng !== "number") {
+        Alert.alert("Error", "Could not read coordinates");
+        return;
+      }
+      onPick({
+        lat,
+        lng,
+        name: r.name,
+        address: r.formatted_address,
+        placeId: r.place_id,
+      });
+      onClose();
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to get place details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.overlay} onPress={onClose} />
+      <View style={[styles.modalCard, { width: "90%", maxWidth: 420 }]}>
+        <Text style={styles.modalTitle}>Search a place (Kuwait)</Text>
+
+        <View style={[styles.inputWrap, { marginTop: 8 }]}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <TextInput
+            autoFocus
+            value={query}
+            onChangeText={setQuery}
+            placeholder="e.g. The Avenues, Salmiya, Messila Beach…"
+            placeholderTextColor={colors.muted}
+            style={styles.input}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery("")}>
+              <Ionicons name="close" size={18} color={colors.muted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {loading ? (
+          <View style={{ paddingVertical: 16 }}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : error ? (
+          <Text style={{ color: "tomato", marginTop: 10 }}>{error}</Text>
+        ) : (
+          <FlatList
+            data={suggestions}
+            keyExtractor={(it) => it.place_id}
+            style={{ maxHeight: 280, marginTop: 8 }}
+            keyboardShouldPersistTaps="handled"
+            ItemSeparatorComponent={() => (
+              <View style={{ height: 1, backgroundColor: colors.border }} />
+            )}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={{ paddingVertical: 12 }}
+                onPress={() => pickByPlaceId(item.place_id)}
+              >
+                <Text style={{ color: colors.text, fontWeight: "700" }}>
+                  {item.description}
+                </Text>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              debounced ? (
+                <Text style={{ color: colors.muted, marginTop: 10 }}>
+                  No results
+                </Text>
+              ) : null
+            }
+          />
+        )}
+
+        <View style={styles.modalActions}>
+          <TouchableOpacity onPress={onClose} style={styles.btnGhost}>
+            <Text style={styles.btnGhostText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+export default function CreateNewEventScreen() {
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
-  const [locationText, setLocationText] = useState(""); // "29.3759, 47.9774" or "47.9774, 29.3759"
+  const [locationText, setLocationText] = useState("");
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState("2h");
-
+  const [placeName, setPlaceName] = useState("");
+  const [address, setAddress] = useState("");
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<Date | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
 
-  // Categories
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [catModal, setCatModal] = useState(false);
+  const [locModal, setLocModal] = useState(false);
 
-  // ----- DATE/TIME MODAL -----
   const [pickerMode, setPickerMode] = useState<PickerMode>("none");
   const [tempDate, setTempDate] = useState<Date>(new Date());
   const isPickerOpen = pickerMode !== "none";
@@ -122,7 +298,10 @@ export default function CreateEventScreen() {
   };
   const openTime = () => {
     if (!date) {
-      Alert.alert("Select date first", "Please choose the event date before picking time.");
+      Alert.alert(
+        "Select date first",
+        "Please choose the event date before picking time."
+      );
       return;
     }
     setPickerMode("time");
@@ -136,7 +315,6 @@ export default function CreateEventScreen() {
   const cancelPicker = () => setPickerMode("none");
   const confirmPicker = () => {
     if (pickerMode === "date") {
-      // Prevent selecting past dates
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const picked = new Date(tempDate);
@@ -148,7 +326,6 @@ export default function CreateEventScreen() {
       setDate(tempDate);
     }
     if (pickerMode === "time") {
-      // If selected date is today, ensure time is in the future
       if (date && isSameCalendarDay(date, new Date())) {
         const now = new Date();
         const candidate = new Date();
@@ -166,7 +343,6 @@ export default function CreateEventScreen() {
     if (selected) setTempDate(selected);
   };
 
-  // ----- IMAGE PICKER -----
   const pickImage = async () => {
     setPickerMode("none");
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -186,7 +362,6 @@ export default function CreateEventScreen() {
   };
   const removeImage = () => setImageUri(null);
 
-  // ----- LOAD CATEGORIES -----
   useEffect(() => {
     (async () => {
       try {
@@ -199,7 +374,6 @@ export default function CreateEventScreen() {
     })();
   }, []);
 
-  // ----- SUBMIT -----
   const onPublish = async () => {
     try {
       if (!title || !description || !date || !time || !duration) {
@@ -209,41 +383,42 @@ export default function CreateEventScreen() {
         );
         return;
       }
-      // Validate combined date-time is in the future
       const scheduledAt = combineDateAndTime(date, time);
       const now = new Date();
       if (scheduledAt <= now) {
-        Alert.alert("Invalid schedule", "Event date and time must be in the future.");
+        Alert.alert(
+          "Invalid schedule",
+          "Event date and time must be in the future."
+        );
         return;
       }
       const coords = parseLngLat(locationText);
       if (!coords) {
         Alert.alert(
-          "Location format",
-          "Enter location as 'lat, lng' or 'lng, lat'."
+          "Location needed",
+          "Please pick a place from the location field."
         );
         return;
       }
-
-      // If your backend requires non-empty image string, enforce it:
       if (!imageUri) {
         Alert.alert("Image required", "Please add an event image.");
         return;
       }
-
       await createEventApi({
         title,
         description,
-        image: imageUri, // backend expects a string
-        location: coords, // [lng, lat] — your controller accepts arrays
+        image: imageUri,
+        location: coords,
         date: date.toISOString(),
-        time: formatTime(time), // "6:00 PM"
+        time: formatTime(time),
         duration,
-        categoryId, // optional
+        categoryId,
+        // @ts-ignore optional extras supported server-side
+        placeName: placeName || undefined,
+        // @ts-ignore
+        address: address || undefined,
       });
-
       Alert.alert("Success", "Event created.");
-      // Quick reset
       setTitle("");
       setDescription("");
       setImageUri(null);
@@ -251,31 +426,15 @@ export default function CreateEventScreen() {
       setDate(null);
       setTime(null);
       setCategoryId(undefined);
+      setPlaceName("");
+      setAddress("");
     } catch (err: any) {
-
-      // Handle 403 with missing organizer fields (for legacy organizers)
-      if (err?.response?.status === 403) {
-        const missing = err?.response?.data?.missing || [];
-        Alert.alert(
-          "Profile incomplete", 
-          `Please complete organizer profile: ${missing.join(", ")}`,
-          [{ text: "Go to Profile", onPress: () => router.push("/organizer/profile") }]
-        );
-        return;
-      }
-      Alert.alert(
-        "Error",
-        err?.response?.data?.message ?? "Could not create event"
-      );
-
       console.log("createEvent error:", err?.message, err?.response?.data);
-      // Show your backend message if provided (e.g., not organizer)
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         "Could not create event";
       Alert.alert("Error", msg);
-
     }
   };
 
@@ -292,30 +451,25 @@ export default function CreateEventScreen() {
           contentInsetAdjustmentBehavior="always"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={[HEADER.topSpace, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
-            <View>
-              <Text style={HEADER.title}>Create Event</Text>
-              <Text style={HEADER.subtitle}>Share your event with community</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={{ color: colors.muted, fontWeight: "700" }}>Cancel</Text>
-            </TouchableOpacity>
+          <View style={styles.topSpace}>
+            <Text style={styles.headerTitle}>Create Event</Text>
+            <Text style={styles.headerSub}>
+              Share your event with community
+            </Text>
           </View>
 
-          {/* Upload / Preview */}
           {imageUri ? (
             <View
-              style={[UPLOAD.box, { padding: 0, overflow: "hidden" }]}
+              style={[styles.uploadBox, { padding: 0, overflow: "hidden" }]}
             >
-              <Image source={{ uri: imageUri }} style={UPLOAD.previewImg} />
-              <View style={UPLOAD.previewActions}>
-                <TouchableOpacity style={UPLOAD.previewBtn} onPress={pickImage}>
+              <Image source={{ uri: imageUri }} style={styles.previewImg} />
+              <View style={styles.previewActions}>
+                <TouchableOpacity style={styles.previewBtn} onPress={pickImage}>
                   <Ionicons name="images" size={16} color={colors.text} />
-                  <Text style={UPLOAD.previewBtnText}>Change</Text>
+                  <Text style={styles.previewBtnText}>Change</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={UPLOAD.previewBtn}
+                  style={styles.previewBtn}
                   onPress={removeImage}
                 >
                   <Ionicons
@@ -323,13 +477,13 @@ export default function CreateEventScreen() {
                     size={16}
                     color={colors.text}
                   />
-                  <Text style={UPLOAD.previewBtnText}>Remove</Text>
+                  <Text style={styles.previewBtnText}>Remove</Text>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <TouchableOpacity
-              style={UPLOAD.box}
+              style={styles.uploadBox}
               activeOpacity={0.85}
               onPress={pickImage}
             >
@@ -338,44 +492,42 @@ export default function CreateEventScreen() {
                 size={30}
                 color={colors.muted}
               />
-              <Text style={UPLOAD.text}>Tap to add event photo</Text>
-              <Text style={UPLOAD.hint}>No size limit</Text>
+              <Text style={styles.uploadText}>Tap to add event photo</Text>
+              <Text style={styles.uploadHint}>No size limit</Text>
             </TouchableOpacity>
           )}
 
-          {/* Form */}
-          <View style={{ paddingHorizontal: 16 }}>
+          <View style={styles.form}>
             <Label text="Event Title" />
-            <View style={FORMS.inputRow}>
+            <View style={styles.inputWrap}>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Enter event title..."
                 placeholderTextColor={colors.muted}
-                style={FORMS.inputText}
+                style={styles.input}
               />
             </View>
 
 
             <Label text="Category (optional id)" />
-            <View style={FORMS.inputRow}>
+            <View style={styles.inputWrap}>
               <TextInput
                 value={categoryId}
                 onChangeText={setCategoryId}
                 placeholder="Enter categoryId (optional)"
                 placeholderTextColor={colors.muted}
-                style={FORMS.inputText}
+                style={styles.input}
 
               />
-              <TouchableOpacity style={FORMS.inputRow} onPress={() => setCatModal(true)}>
+              <TouchableOpacity style={[styles.inputWrap, { height: 50 }]} onPress={() => setCatModal(true)}>
 
-              <Text style={[styles.input, { paddingVertical: 12 }]}>
+              <Text style={[styles.input, { paddingVertical: 12 }]}> 
                 {categories.find((c) => c._id === categoryId)?.name ??
                   "Select a category"}
               </Text>
               <Ionicons name="chevron-down" size={18} color={colors.muted} />
-            </TouchableOpacity>
-
+              </TouchableOpacity>
             </View>
 
             <View style={styles.row}>
@@ -384,10 +536,13 @@ export default function CreateEventScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={openDate}
-                  style={FORMS.inputRow}
+                  style={styles.inputWrap}
                 >
                   <Text
-                    style={[FORMS.inputText, { color: date ? colors.text : colors.muted }]}
+                    style={[
+                      styles.inputText,
+                      { color: date ? colors.text : colors.muted },
+                    ]}
                   >
                     {date ? formatDate(date) : "dd/mm/yyyy"}
                   </Text>
@@ -404,10 +559,13 @@ export default function CreateEventScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={openTime}
-                  style={FORMS.inputRow}
+                  style={styles.inputWrap}
                 >
                   <Text
-                    style={[FORMS.inputText, { color: time ? colors.text : colors.muted }]}
+                    style={[
+                      styles.inputText,
+                      { color: time ? colors.text : colors.muted },
+                    ]}
                   >
                     {time ? formatTime(time) : "--:-- --"}
                   </Text>
@@ -420,31 +578,62 @@ export default function CreateEventScreen() {
               </View>
             </View>
 
-            <Label text="Location (coords)" />
-            <View style={FORMS.inputRow}>
+            <Label text="Location" />
+            <TouchableOpacity
+              style={styles.inputWrap}
+              onPress={() => setLocModal(true)}
+              activeOpacity={0.85}
+            >
               <Ionicons
                 name="location-outline"
                 size={18}
                 color={colors.muted}
               />
+              <Text style={[styles.input, { paddingVertical: 12 }]}>
+                {placeName ||
+                  address ||
+                  (locationText ? locationText : "Search a place in Kuwait")}
+              </Text>
+              <Ionicons name="search" size={18} color={colors.muted} />
+            </TouchableOpacity>
+
+            <Label text="Place name (optional)" />
+            <View style={styles.inputWrap}>
+              <Ionicons
+                name="business-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
-                value={locationText}
-                onChangeText={setLocationText}
-                placeholder="lat, lng  (or  lng, lat)"
+                value={placeName}
+                onChangeText={setPlaceName}
+                placeholder="e.g. The Avenues Mall"
                 placeholderTextColor={colors.muted}
-                style={FORMS.inputText}
+                style={styles.input}
+              />
+            </View>
+
+            <Label text="Address (optional)" />
+            <View style={styles.inputWrap}>
+              <Ionicons name="map-outline" size={18} color={colors.muted} />
+              <TextInput
+                value={address}
+                onChangeText={setAddress}
+                placeholder="e.g. Al Rai, Kuwait"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
               />
             </View>
 
             <Label text="Duration" />
-            <View style={FORMS.inputRow}>
+            <View style={styles.inputWrap}>
               <Ionicons name="timer-outline" size={18} color={colors.muted} />
               <TextInput
                 value={duration}
                 onChangeText={setDuration}
                 placeholder="e.g. 2h"
                 placeholderTextColor={colors.muted}
-                style={FORMS.inputText}
+                style={styles.input}
               />
             </View>
 
@@ -454,36 +643,26 @@ export default function CreateEventScreen() {
               onChangeText={setDescription}
               placeholder="Describe your event..."
               placeholderTextColor={colors.muted}
-              style={[FORMS.input, { height: 110, textAlignVertical: "top" }]}
+              style={[
+                styles.inputWrap,
+                { height: 110, textAlignVertical: "top" },
+              ]}
               multiline
             />
           </View>
 
-          {/* Publish */}
           <TouchableOpacity
-            style={BUTTONS.publish}
+            style={styles.publishBtn}
             activeOpacity={0.9}
             onPress={onPublish}
           >
             <Ionicons name="checkmark" size={18} color="#fff" />
-            <Text style={BUTTONS.publishText}>Publish Event</Text>
+            <Text style={styles.publishText}>Publish Event</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom bar (interactive) */}
-      <View style={BOTTOM_BAR.bar}>
-        <TouchableOpacity style={BOTTOM_BAR.item} onPress={() => router.replace("/organizer")}> 
-          <Ionicons name="home" size={16} color={colors.text} />
-          <Text style={BOTTOM_BAR.text}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={BOTTOM_BAR.item} onPress={() => router.replace("/organizer/more")}> 
-          <Ionicons name="ellipsis-horizontal" size={16} color={colors.muted} />
-          <Text style={[BOTTOM_BAR.text, { color: colors.muted }]}>More</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Category modal */}
+      {/* Category Modal */}
       <Modal
         visible={catModal}
         transparent
@@ -529,7 +708,18 @@ export default function CreateEventScreen() {
         </View>
       </Modal>
 
-      {/* Centered Date/Time Modal */}
+      {/* Place Autocomplete */}
+      <PlaceAutocomplete
+        visible={locModal}
+        onClose={() => setLocModal(false)}
+        onPick={({ lat, lng, name, address: addr }) => {
+          if (name) setPlaceName(name);
+          if (addr) setAddress(addr);
+          setLocationText(`${lat}, ${lng}`);
+        }}
+      />
+
+      {/* Date/Time Picker */}
       <Modal
         transparent
         visible={isPickerOpen}
@@ -549,7 +739,15 @@ export default function CreateEventScreen() {
             themeVariant="dark"
             minuteInterval={1}
             is24Hour={false}
-            minimumDate={pickerMode === "date" ? (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })() : undefined}
+            minimumDate={
+              pickerMode === "date"
+                ? (() => {
+                    const d = new Date();
+                    d.setHours(0, 0, 0, 0);
+                    return d;
+                  })()
+                : undefined
+            }
             style={{ alignSelf: "stretch" }}
           />
           <View style={styles.modalActions}>
@@ -618,7 +816,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 12,
   },
-
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -631,6 +828,7 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, color: colors.text, fontSize: 14 },
   inputText: { flex: 1, fontSize: 14 },
+
   row: { flexDirection: "row", marginTop: 2 },
 
   publishBtn: {
@@ -647,22 +845,7 @@ const styles = StyleSheet.create({
   },
   publishText: { color: "#fff", fontWeight: "900", fontSize: 15 },
 
-  bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 64,
-    backgroundColor: colors.surfaceAlt,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  tabItem: { alignItems: "center", gap: 4 },
-  tabText: { color: colors.text, fontSize: 12 },
-
+  // Modals
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.45)",
