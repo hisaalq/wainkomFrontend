@@ -4,18 +4,19 @@ import instance from ".";
 
 export const getProfile = async () => {
   const resp = await instance.get("/user/profile/");
-  return resp.data; 
+  return resp.data;
 };
 
 export const getuser = async () => {
   const resp = await instance.get("/user/");
-  return resp.data; 
+  return resp.data;
 };
 
 export const updateUser = async (userInfo: Partial<UserInfo>) => {
   // If an image is a local file URI, send multipart/form-data for multer backends
   const maybeImage = userInfo.image;
-  const looksLikeFileUri = typeof maybeImage === "string" && /^file:/.test(maybeImage);
+  const looksLikeFileUri =
+    typeof maybeImage === "string" && /^file:/.test(maybeImage);
 
   if (looksLikeFileUri) {
     const form = new FormData();
@@ -23,7 +24,14 @@ export const updateUser = async (userInfo: Partial<UserInfo>) => {
     const uri = maybeImage as string;
     const filename = uri.split("/").pop() || `avatar.jpg`;
     const ext = filename.split(".").pop()?.toLowerCase();
-    const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : ext === "heic" || ext === "heif" ? "image/heic" : "image/jpeg";
+    const mime =
+      ext === "png"
+        ? "image/png"
+        : ext === "webp"
+        ? "image/webp"
+        : ext === "heic" || ext === "heif"
+        ? "image/heic"
+        : "image/jpeg";
 
     form.append(
       "image",
@@ -47,10 +55,7 @@ export const updateUser = async (userInfo: Partial<UserInfo>) => {
   const { data } = await instance.put<UserInfo>("/updateprofile", userInfo);
   return data;
 };
-  
 
 export const logout = async () => {
   await AsyncStorage.removeItem("token");
 };
-
-

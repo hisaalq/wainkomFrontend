@@ -4,6 +4,7 @@ export interface UserInfo {
   email: string;
   image: string;
   bio: string;
+  phone:string;
   rating: number;
   Events: Event[];
   createdAt: string;
