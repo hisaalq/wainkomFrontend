@@ -1,3 +1,5 @@
+
+import { BOTTOM_BAR, BUTTONS, FORMS, HEADER, UPLOAD } from "@/assets/style/stylesheet";
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { createEventApi } from "@/api/events";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -20,14 +22,17 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  
   View,
 } from "react-native";
+import { TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 // Google Places key from env or app.json
 const GOOGLE_PLACES_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
+
 
 
 const colors = {

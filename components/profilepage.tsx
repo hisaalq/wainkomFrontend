@@ -2,7 +2,6 @@ import {
   Engagement,
   fetchEngagementByIdApi,
   removeEngagementApi,
-  saveEngagementApi,
 } from "@/api/eventsave";
 import AuthContext from "@/context/authcontext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +9,7 @@ import React, { useContext, useMemo, useState } from "react";
 import {
   FlatList,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,27 +17,103 @@ import {
   View,
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
-import LogoutButton from "./LogoutButton";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import LogoutButton from "./LogoutButton"; // تم استيراد مكون زر الخروج
+
+// ===============================================
+// 🆕 مكون المودال لعرض الشروط والأحكام
+// ===============================================
+const TermsModal = ({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) => {
+  const [isArabic, setIsArabic] = useState(true);
+
+  const title = isArabic ? "الشروط والأحكام" : "Terms and Conditions";
+  const languageToggleText = isArabic ? "English" : "العربية";
+
+  const termsArabic = `
+    مرحبًا بك في برنامج وياكم.
+    1. قبول الشروط: باستخدامك للبرنامج، فإنك توافق على الالتزام بهذه الشروط.
+    2. خصوصية البيانات: يتم التعامل مع بيانات المستخدمين بسرية تامة وعدم مشاركتها مع أي طرف ثالث.
+    3. الفعاليات: البرنامج يوفر معلومات عن فعاليات خارجية، ولا يتحمل مسؤولية محتوى هذه الفعاليات أو إلغائها.
+    4. حقوق الملكية الفكرية: جميع محتويات البرنامج محمية بحقوق النشر لبرنامج وياكم.
+    5. الإنهاء: يحتفظ برنامج وياكم بالحق في إنهاء وصول أي مستخدم يخالف هذه الشروط.
+  `;
+
+  const termsEnglish = `
+    Welcome to Wayyakum program.
+    1. Acceptance of Terms: By using the program, you agree to be bound by these Terms and Conditions.
+    2. Data Privacy: User data is handled with strict confidentiality and will not be shared with any third party.
+    3. Events: The program provides information about external events and is not responsible for the content or cancellation of these events.
+    4. Intellectual Property: All program content is copyrighted by Wayyakum program.
+    5. Termination: Wayyakum program reserves the right to terminate access for any user who violates these terms.
+  `;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={modalStyles.centeredView}>
+        <View style={modalStyles.modalView}>
+          <View style={modalStyles.modalHeader}>
+            <Text style={modalStyles.modalTitle}>{title}</Text>
+            <TouchableOpacity
+              onPress={() => setIsArabic(!isArabic)}
+              style={modalStyles.languageToggle}
+            >
+              <Ionicons
+                name="language"
+                size={20}
+                color="#00d4ff"
+                style={{ marginRight: 5 }}
+              />
+              <Text style={modalStyles.languageText}>{languageToggleText}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={modalStyles.termsScrollView}>
+            <Text
+              style={[
+                modalStyles.modalText,
+                { textAlign: isArabic ? "right" : "left" },
+              ]}
+            >
+              {isArabic ? termsArabic.trim() : termsEnglish.trim()}
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity style={modalStyles.buttonClose} onPress={onClose}>
+            <Text style={modalStyles.textStyle}>إغلاق / Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+// ===============================================
 
 const ProfileScreen = () => {
-  // تم استخراج username بنجاح
-  const { userId } = useContext(AuthContext);
+  const { username } = useContext(AuthContext);
   const queryClient = useQueryClient();
-
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
-  // Fetch engagements
   const {
     data: engagements,
     isLoading,
     error,
   } = useQuery<Engagement[]>({
-    queryKey: ["engagements", userId],
-    queryFn: () => fetchEngagementByIdApi(userId!),
-    enabled: !!userId,
+    queryKey: ["engagements"],
+    queryFn: fetchEngagementByIdApi,
   });
 
-  // Sort events by date
   const sortedEvents = useMemo(() => {
     if (!engagements) return [];
     return [...engagements].sort((a, b) => {
@@ -47,38 +123,23 @@ const ProfileScreen = () => {
     });
   }, [engagements, sortOrder]);
 
-  // Handle bookmark (add engagement) - Remains for potential future use
-  const handleBookmark = async (eventId: string) => {
-    if (!userId) return;
-    await saveEngagementApi(eventId);
-    queryClient.invalidateQueries({ queryKey: ["engagements", userId] });
-  };
-
-  // Handle remove bookmark (remove engagement)
   const handleRemoveBookmark = async (engagementId: string) => {
-    if (!userId) return;
     await removeEngagementApi(engagementId);
-    queryClient.invalidateQueries({ queryKey: ["engagements", userId] });
+    queryClient.invalidateQueries({ queryKey: ["engagements"] });
   };
 
   const user = {
-    // عرض اسم المستخدم (username) الذي تم جلبه من السياق
-    name: userId || "Guest",
-    // يمكنك جلب البريد الإلكتروني من السياق أيضًا إذا كان متوفراً، أو استخدام قيمة افتراضية/ثابتة
     email: "user@example.com",
   };
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ padding: 16 }}
-    >
+  // مكون رأس القائمة (ListHeaderComponent)
+  const ListHeader = (
+    <>
       {/* User Info */}
       <View style={styles.cardHeader}>
         <View style={styles.row}>
           <View style={{ marginLeft: 12 }}>
-            <Text style={styles.name}>{user.name}</Text>
-            {/* تم إضافة عرض البريد الإلكتروني مرة أخرى */}
+            <Text style={styles.name}>{username}</Text>
             <Text style={styles.email}>{user.email}</Text>
           </View>
         </View>
@@ -86,7 +147,7 @@ const ProfileScreen = () => {
 
       <View style={{ height: 12 }} />
 
-      {/* Engagement Section */}
+      {/* Engagement Header */}
       <View style={styles.engagementWrapper}>
         <View style={styles.engagementHeader}>
           <Text style={styles.sectionTitle}>Engagement</Text>
@@ -109,77 +170,168 @@ const ProfileScreen = () => {
         {error && (
           <Text style={{ color: "red" }}>Error loading engagements</Text>
         )}
-
-        <View style={styles.eventsBox}>
-          <FlatList
-            data={sortedEvents}
-            keyExtractor={(item) => item._id}
-            renderItem={({ item }) => {
-              const { title, description, image, location, date, time } =
-                item.event;
-
-              return (
-                <View style={styles.eventCard}>
-                  {/* Event image */}
-                  <Image source={{ uri: image }} style={styles.eventImage} />
-
-                  {/* أيقونة الحذف */}
-                  <TouchableOpacity
-                    style={styles.bookmarkIcon}
-                    onPress={() => handleRemoveBookmark(item._id)}
-                  >
-                    <Icon name="bookmark" size={24} color="#00d4ff" />
-                  </TouchableOpacity>
-
-                  {/* محتوى الفعالية */}
-                  <View style={styles.eventContent}>
-                    <Text style={styles.eventTitle}>{title}</Text>
-                    <Text style={styles.eventDesc}>{description}</Text>
-                    {location && location.coordinates && (
-                      <Text style={styles.eventLocationText}>
-                        Location: Lat {location.coordinates[1]}, Lng{" "}
-                        {location.coordinates[0]}
-                      </Text>
-                    )}
-                    <Text style={styles.eventDateText}>
-                      {new Date(date).toLocaleDateString()} at {time}
-                    </Text>
-                  </View>
-                </View>
-              );
-            }}
-          />
-        </View>
       </View>
+    </>
+  );
 
-      {/* Logout */}
+  // مكون ذيل القائمة (ListFooterComponent)
+  const ListFooter = (
+    <>
+      {/* قسم الشروط والأحكام */}
       <TouchableOpacity
-        style={styles.logoutBtn}
-        onPress={() => alert("Logout pressed")}
+        style={styles.settingsItem}
+        onPress={() => setTermsModalVisible(true)}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Icon name="corner-down-left" size={18} color="#ff4d4f" />
-          <Text style={styles.logoutText}>
-            {" "}
-            <LogoutButton />
-          </Text>
+        <View style={styles.itemLeft}>
+          <View style={styles.iconWrap}>
+            <Ionicons name="document-text-outline" size={20} color="#00d4ff" />
+          </View>
+          <Text style={styles.itemText}>الشروط والأحكام</Text>
         </View>
+        <Icon name="chevron-right" size={20} color="#9ca3af" />
       </TouchableOpacity>
-    </ScrollView>
+
+      {/* زر تسجيل الخروج الموحد الجديد */}
+      <LogoutButton />
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={sortedEvents}
+        keyExtractor={(item) => item._id}
+        ListHeaderComponent={ListHeader}
+        ListFooterComponent={ListFooter}
+        contentContainerStyle={{ padding: 16 }}
+        style={{ flex: 1 }}
+        renderItem={({ item }) => {
+          const { title, description, image, location, date, time } =
+            item.event;
+
+          return (
+            <View style={styles.eventCard}>
+              <Image source={{ uri: image }} style={styles.eventImage} />
+              <TouchableOpacity
+                style={styles.bookmarkIcon}
+                onPress={() => handleRemoveBookmark(item._id)}
+              >
+                <Icon name="bookmark" size={24} color="#00d4ff" />
+              </TouchableOpacity>
+              <View style={styles.eventContent}>
+                <Text style={styles.eventTitle}>{title}</Text>
+                <Text style={styles.eventDesc}>{description}</Text>
+                {location &&
+                  typeof location !== "string" &&
+                  location.coordinates && (
+                    <Text style={styles.eventLocationText}>
+                      Location: Lat {location.coordinates[1]}, Lng{" "}
+                      {location.coordinates[0]}
+                    </Text>
+                  )}
+
+                {location && typeof location === "string" && (
+                  <Text style={styles.eventLocationText}>
+                    Location: {location}
+                  </Text>
+                )}
+                <Text style={styles.eventDateText}>
+                  {new Date(date).toLocaleDateString()} at {time}
+                </Text>
+              </View>
+            </View>
+          );
+        }}
+      />
+      {/* عرض المودال */}
+      <TermsModal
+        visible={termsModalVisible}
+        onClose={() => setTermsModalVisible(false)}
+      />
+    </View>
   );
 };
 
-function renderItem(title: string, iconName: string, highlight = false) {
-  // هذه الدالة لا تستخدم في الكود، يمكنك حذفها
-}
+const modalStyles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 20,
+    padding: 20,
+    width: "90%",
+    maxHeight: "80%",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  termsScrollView: {
+    maxHeight: 400,
+    paddingHorizontal: 5,
+    marginBottom: 15,
+  },
+  modalText: {
+    color: "#e6eef0",
+    marginBottom: 15,
+    lineHeight: 22,
+    fontSize: 14,
+  },
+  buttonClose: {
+    backgroundColor: "#00d4ff",
+    borderRadius: 10,
+    padding: 10,
+    elevation: 2,
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  languageToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#00d4ff",
+  },
+  languageText: {
+    color: "#00d4ff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+});
+// ===============================================
 
+// ===============================================
+// 🎨 تنسيقات الشاشة
+// ===============================================
 const styles = StyleSheet.create({
-  // ... (التنسيقات السابقة كما هي)
   container: { flex: 1, backgroundColor: "#0b0f12" },
   cardHeader: { backgroundColor: "#0f1720", borderRadius: 12, padding: 14 },
   row: { flexDirection: "row", alignItems: "center" },
   name: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  // التنسيق الخاص بالبريد الإلكتروني موجود
   email: { color: "#9ca3af", marginTop: 4 },
   engagementWrapper: {
     marginVertical: 16,
@@ -196,7 +348,6 @@ const styles = StyleSheet.create({
   sectionTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
   sortBtn: { flexDirection: "row", alignItems: "center" },
   sortText: { color: "#00d4ff", marginLeft: 6 },
-  eventsBox: { maxHeight: 350 },
   eventCard: {
     borderRadius: 12,
     marginBottom: 12,
@@ -218,8 +369,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 13,
   },
-
-  // === التحسين: التنسيقات الجديدة ===
   eventContent: {
     padding: 12,
   },
@@ -232,19 +381,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
   },
-  eventHeader: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    right: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  eventLocation: { flexDirection: "row", alignItems: "center" },
-  locationText: { color: "#fff", marginLeft: 4 },
-  eventDate: { color: "#9ca3af", fontSize: 13 },
-  item: {
+  settingsItem: {
     backgroundColor: "#0f1720",
     marginTop: 12,
     padding: 14,
@@ -253,7 +390,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  itemActive: { backgroundColor: "#122224" },
   itemLeft: { flexDirection: "row", alignItems: "center" },
   iconWrap: {
     width: 36,
@@ -265,16 +401,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   itemText: { color: "#e6eef0", fontSize: 15 },
-  logoutBtn: {
-    marginTop: 22,
-    backgroundColor: "#0f1720",
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#241212",
-  },
-  logoutText: { color: "#ff4d4f", fontWeight: "700", marginLeft: 8 },
 });
 
 export default ProfileScreen;

@@ -1,6 +1,6 @@
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -15,7 +15,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+
+ from "react-native";
 import { CategoryItem, fetchCategories } from "../api/categories";
 import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
 
@@ -35,6 +37,7 @@ type EventItem = BaseEventItem & {
 };
 
 export default function EventsScreen({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
   const [selectedCat, setSelectedCat] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -52,6 +55,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
       return "Invalid date";
     }
   };
+  
 
   const formatTime = (dateString: string) => {
     try {
@@ -99,6 +103,18 @@ export default function EventsScreen({ userId }: { userId: string }) {
     setSelectedEvent(ev);
     setModalVisible(true);
   };
+  
+  // Mutation للحفظ
+  const saveMutation = useMutation({
+    mutationFn: saveEngagementApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["engagements"] });
+    },
+    onError: (err, eventId, context) => {
+      console.error("Error saving engagement:", err);
+      setSavedEvents((prev) => prev.filter((id) => id !== eventId));
+    },
+  });
 
   // --------------- Reverse Geocoding Cache ---------------
   const [locationCache, setLocationCache] = useState<Record<string, string>>(
@@ -208,19 +224,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
         contentContainerStyle={{ paddingBottom: 90 }}
       >
         <View style={styles.topRow}>
-          <View>
-            <Text style={styles.title}>Events</Text>
-            <Text style={styles.subtitle}>Discover amazing events</Text>
-          </View>
+          
           <View style={styles.rightIcons}>
-            <View style={styles.bellWrapper}>
-              <Ionicons name="notifications-outline" size={30} color="#fff" />
-              <View style={styles.redDot} />
-            </View>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/60" }}
-              style={styles.avatar}
-            />
+            
           </View>
         </View>
 
