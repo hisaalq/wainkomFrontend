@@ -18,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import LogoutButton from "../LogoutButton";
+import LogoutButton from "../auth/LogoutButton";
 
 type ItemProps = {
   left: React.ReactNode;

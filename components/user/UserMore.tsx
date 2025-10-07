@@ -1,7 +1,7 @@
 import { getProfile } from "@/api/user";
 import { COLORS } from "@/assets/style/color";
 import { LAYOUT, moreStyles, TYPO } from "@/assets/style/stylesheet";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/auth/LogoutButton";
 import { UserInfo } from "@/types/UserInfo";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
