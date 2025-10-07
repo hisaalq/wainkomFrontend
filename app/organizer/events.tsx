@@ -2,30 +2,24 @@ import { fetchEventsByOrganizer } from "@/api/events";
 import { getOrgProfile } from "@/api/organizer";
 import { COLORS } from "@/assets/style/color";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import React from "react";
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OrganizerEventsScreen() {
-  const [loading, setLoading] = React.useState(true);
-  const [events, setEvents] = React.useState<any[]>([]);
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ["organizer", "events"],
+    queryFn: async () => {
+      const org = await getOrgProfile();
+      const orgId = (org as any)?._id || (org as any)?.id;
+      const data = orgId ? await fetchEventsByOrganizer(orgId) : [];
+      return data as any[];
+    },
+    placeholderData: (prev) => prev,
+  });
 
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const org = await getOrgProfile();
-        const orgId = (org as any)?._id || (org as any)?.id;
-        const data = orgId ? await fetchEventsByOrganizer(orgId) : [];
-        setEvents(data);
-      } catch (e) {
-        setEvents([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
         <ActivityIndicator color={COLORS.primary} />

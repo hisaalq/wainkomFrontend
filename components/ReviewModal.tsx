@@ -1,4 +1,4 @@
-import { createEngagement } from "@/api/engagement";
+import { saveEngagementApi } from "@/api/eventsave";
 import { useMyReview, useSubmitRating, useUpsertReviewText } from "@/hooks/useReviews";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Modal, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -52,7 +52,7 @@ export default function ReviewModal({
     try {
       setError(null);
       setEngaging(true);
-      await createEngagement(eventId);
+      await saveEngagementApi(eventId);
       onEngaged?.();
     } catch (e: any) {
       setError(e?.response?.data?.message || "Could not engage with event.");
