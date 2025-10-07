@@ -29,6 +29,7 @@ const PrivacyModal = ({
   visible: boolean;
   onClose: () => void;
 }) => {
+  // ... (الكود الخاص بـ TermsModal لا يتغير) ...
   const [isArabic, setIsArabic] = useState(true);
   const title = isArabic ? "سياسة الخصوصية" : "Privacy Policy";
   const languageToggleText = isArabic ? "English" : "العربية";
@@ -67,6 +68,9 @@ const PrivacyModal = ({
   );
 };
 
+// ===============================================
+// مكون ProfileScreen
+// ===============================================
 const ProfileScreen = () => {
   const { username } = useContext(AuthContext);
   const navigation = useNavigation();
@@ -111,10 +115,9 @@ const ProfileScreen = () => {
 
   const user = { email: profile?.email ?? "" };
 
-  // مكون رأس القائمة (ListHeaderComponent)
   const ListHeader = (
     <>
-      {/* User Info */}
+      {/* User Info & Edit Button */}
       <View style={styles.cardHeader}>
         {isEditing ? (
           <View>
@@ -185,7 +188,6 @@ const ProfileScreen = () => {
     </>
   );
 
-  // مكون ذيل القائمة (ListFooterComponent)
   const ListFooter = (
     <>
       {/* Edit button placed directly above Sign Out */}
@@ -239,6 +241,10 @@ const ProfileScreen = () => {
     </ScrollView>
   );
 };
+
+// ===============================================
+// التنسيقات (Styles)
+// ===============================================
 
 const modalStyles = StyleSheet.create({
   centeredView: {
@@ -310,10 +316,112 @@ const modalStyles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+const editModalStyles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.8)",
+  },
+  modalView: {
+    width: "100%",
+    height: "90%",
+    backgroundColor: "#0b0f12",
+    borderTopRightRadius: 20,
+    borderTopLeftRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: 10,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e1e1e",
+  },
+  headerText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  closeButton: {
+    padding: 5,
+  },
+  imageContainer: { alignItems: "center", marginBottom: 30 },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: "#00d4ff",
+  },
+  imageButton: {
+    position: "absolute",
+    bottom: 0,
+    right: "35%",
+    backgroundColor: "#00d4ff",
+    borderRadius: 20,
+    padding: 8,
+  },
+  inputGroup: { marginBottom: 15 },
+  label: {
+    color: "#fff",
+    fontSize: 14,
+    marginBottom: 5,
+    fontWeight: "600",
+    textAlign: "right",
+  },
+  input: {
+    backgroundColor: "#0f1720",
+    color: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 16,
+    textAlign: "right",
+  },
+  textArea: { height: 100, textAlignVertical: "top" },
+  updateButton: {
+    backgroundColor: "#00d4ff",
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  disabledButton: { backgroundColor: "#00d4ff50" },
+  buttonText: { color: "#0b0f12", fontSize: 18, fontWeight: "bold" },
+  errorText: { color: "red", textAlign: "center", marginTop: 10, fontSize: 14 },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0b0f12" },
   cardHeader: { backgroundColor: "#0f1720", borderRadius: 12, padding: 14 },
   row: { flexDirection: "row", alignItems: "center" },
+
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#00d4ff",
+  },
+  editButton: {
+    backgroundColor: "#00d4ff",
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  editButtonText: {
+    color: "#0b0f12",
+    marginLeft: 8,
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
   name: { color: "#fff", fontWeight: "700", fontSize: 16 },
   email: { color: "#9ca3af", marginTop: 4 },
   input: {
