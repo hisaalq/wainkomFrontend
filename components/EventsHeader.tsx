@@ -15,16 +15,30 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-}
-
- from "react-native";
+} from "react-native";
 import { CategoryItem, fetchCategories } from "../api/categories";
 import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
 
-// Extend your EventItem so TS knows these might exist
+type FilterType =
+  | "none"
+  | "name_asc"
+  | "name_desc"
+  | "date_week"
+  | "date_month"
+  | "date_year";
+
+const FILTERS = [
+  { key: "name_asc" as FilterType, label: "Name: A to Z" },
+  { key: "name_desc" as FilterType, label: "Name: Z to A" },
+  { key: "date_week" as FilterType, label: "This Week" },
+  { key: "date_month" as FilterType, label: "Next Month" },
+  { key: "date_year" as FilterType, label: "Next Year" },
+];
+
+
 type EventItem = BaseEventItem & {
   placeName?: string;
   address?: string;
@@ -32,8 +46,32 @@ type EventItem = BaseEventItem & {
     | string
     | {
         type?: "Point";
-        coordinates?: [number, number]; // [lng, lat]
+        coordinates?: [number, number]; 
       };
+};
+
+const isDateInPeriod = (
+  eventDate: string,
+  period: "date_week" | "date_month" | "date_year"
+): boolean => {
+  const now = new Date();
+  const event = new Date(eventDate);
+
+  if (event < now) return false;
+
+  let start = new Date(now);
+  let end = new Date(now);
+
+  if (period === "date_week") {
+    end.setDate(now.getDate() + 7);
+  } else if (period === "date_month") {
+    end.setMonth(now.getMonth() + 2);
+    end.setDate(0);
+  } else if (period === "date_year") {
+    end.setFullYear(now.getFullYear() + 1);
+  }
+
+  return event > now && event <= end;
 };
 
 export default function EventsScreen({ userId }: { userId: string }) {
@@ -43,6 +81,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [savedEvents, setSavedEvents] = useState<string[]>([]); // الأحداث المحفوظة
+
+  const [activeFilter, setActiveFilter] = useState<FilterType>("none");
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const formatDate = (dateString: string) => {
     try {
@@ -55,7 +96,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
       return "Invalid date";
     }
   };
-  
 
   const formatTime = (dateString: string) => {
     try {
@@ -89,22 +129,45 @@ export default function EventsScreen({ userId }: { userId: string }) {
 
   const events = (eventsRaw as EventItem[] | undefined) ?? [];
 
-  const filteredEvents = useMemo(() => {
-    return events.filter((ev) => {
+  const sortedAndFilteredEvents = useMemo(() => {
+    let list = events.filter((ev) => {
       const matchSearch = ev.title
         ?.toLowerCase()
         .includes(searchText.toLowerCase());
       const matchCat = selectedCat === "all" || ev.categoryId === selectedCat;
       return matchSearch && matchCat;
     });
-  }, [events, searchText, selectedCat]);
+
+    if (activeFilter.startsWith("date_")) {
+      list = list.filter((ev) =>
+        isDateInPeriod(ev.date, activeFilter as any)
+      );
+    }
+
+    list.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+
+      if (activeFilter === "name_asc" || activeFilter === "name_desc") {
+        const titleA = a.title?.toLowerCase() || "";
+        const titleB = b.title?.toLowerCase() || "";
+        const comparison = titleA.localeCompare(titleB);
+        return activeFilter === "name_asc" ? comparison : -comparison;
+      }
+
+      return dateA - dateB;
+    });
+
+    return list;
+  }, [events, searchText, selectedCat, activeFilter]);
+
+  const filteredEvents = sortedAndFilteredEvents;
 
   const openEvent = (ev: EventItem) => {
     setSelectedEvent(ev);
     setModalVisible(true);
   };
-  
-  // Mutation للحفظ
+
   const saveMutation = useMutation({
     mutationFn: saveEngagementApi,
     onSuccess: () => {
@@ -116,7 +179,6 @@ export default function EventsScreen({ userId }: { userId: string }) {
     },
   });
 
-  // --------------- Reverse Geocoding Cache ---------------
   const [locationCache, setLocationCache] = useState<Record<string, string>>(
     {}
   );
@@ -134,17 +196,15 @@ export default function EventsScreen({ userId }: { userId: string }) {
       Number.isFinite(c[0]) &&
       Number.isFinite(c[1])
     ) {
-      return [c[0], c[1]]; // [lng, lat]
+      return [c[0], c[1]]; 
     }
     return null;
   };
 
   useEffect(() => {
     (async () => {
-      // optional permission
       await Location.requestForegroundPermissionsAsync().catch(() => {});
       for (const ev of filteredEvents) {
-        // if event already has human-readable fields, skip
         if ((ev as any).placeName || (ev as any).address) continue;
         const coords = extractCoords(ev);
         if (!coords) continue;
@@ -195,10 +255,8 @@ export default function EventsScreen({ userId }: { userId: string }) {
     return "Unknown location";
   };
 
-  // حفظ/حذف الايفنت
   const toggleBookmark = async (eventId: string) => {
     const isSaved = savedEvents.includes(eventId);
-    // Optimistic UI
     setSavedEvents((prev) =>
       isSaved ? prev.filter((id) => id !== eventId) : [...prev, eventId]
     );
@@ -216,6 +274,73 @@ export default function EventsScreen({ userId }: { userId: string }) {
     }
   };
 
+  const FilterModal = () => (
+    <Modal
+      visible={showFilterModal}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => setShowFilterModal(false)}
+    >
+      <TouchableOpacity
+        style={styles.filterModalOverlayNew}
+        activeOpacity={1}
+        onPress={() => setShowFilterModal(false)}
+      >
+        <View style={styles.filterModalContent}>
+          <Text style={styles.filterModalTitle}>Apply Filters</Text>
+          <TouchableOpacity
+            style={styles.filterItem}
+            onPress={() => {
+              setActiveFilter("none");
+              setShowFilterModal(false);
+            }}
+          >
+            <Text style={styles.filterTextActive}>Clear All Filters</Text>
+            {activeFilter === "none" && (
+              <Ionicons name="checkmark-circle" size={20} color="#00d4ff" />
+            )}
+          </TouchableOpacity>
+          {FILTERS.map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              style={styles.filterItem}
+              onPress={() => {
+                setActiveFilter(filter.key);
+                setShowFilterModal(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  activeFilter === filter.key && styles.filterTextActive,
+                ]}
+              >
+                {filter.label}
+              </Text>
+              {activeFilter === filter.key && (
+                <Ionicons name="checkmark-circle" size={20} color="#00d4ff" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  const FilterBtn = () => (
+    <TouchableOpacity
+      style={styles.filterBtn}
+      onPress={() => setShowFilterModal(true)}
+    >
+      <Ionicons
+        name="options-outline"
+        size={24}
+        color={activeFilter !== "none" ? "#00d4ff" : "#fff"}
+      />
+      {activeFilter !== "none" && <View style={styles.filterDot} />}
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#121212" }}>
       <ScrollView
@@ -224,10 +349,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
         contentContainerStyle={{ paddingBottom: 90 }}
       >
         <View style={styles.topRow}>
-          
-          <View style={styles.rightIcons}>
-            
-          </View>
+          <View style={styles.rightIcons}></View>
         </View>
 
         <View style={styles.searchBox}>
@@ -304,7 +426,11 @@ export default function EventsScreen({ userId }: { userId: string }) {
           ))}
         </ScrollView>
 
-        <Text style={styles.upcomingTitle}>Upcoming Events</Text>
+        <View style={styles.filterRow}>
+            <Text style={styles.upcomingTitle}>Upcoming Events</Text>
+            <FilterBtn />
+        </View>
+        
         {isLoading && <ActivityIndicator color="#00d4ff" size="large" />}
         {error && <Text style={{ color: "red" }}>Failed to load events.</Text>}
 
@@ -427,6 +553,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
           </View>
         </Modal>
       </ScrollView>
+      <FilterModal />
     </SafeAreaView>
   );
 }
@@ -440,7 +567,7 @@ const styles = StyleSheet.create({
   },
   topRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end", 
     alignItems: "center",
   },
   title: { fontSize: 28, fontWeight: "700", color: "#fff" },
@@ -484,12 +611,18 @@ const styles = StyleSheet.create({
   },
   catCardActive: { borderWidth: 1.5, borderColor: "#00d4ff" },
   catText: { color: "#aaa", marginTop: 6, fontSize: 15, fontWeight: "500" },
+  
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
   upcomingTitle: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "700",
-    marginTop: 10,
-    marginBottom: 10,
   },
   eventCard: {
     flexDirection: "row",
@@ -580,4 +713,67 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   eventTitle: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+
+  // تنسيق زر الفلتر
+  filterBtn: {
+    padding: 8,
+    backgroundColor: "#1e1e1e",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  filterDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#00d4ff",
+    position: "absolute",
+    top: 5,
+    right: 5,
+  },
+
+  // 💡 تنسيقات مودال الفلترة الجديدة (لتغيير موضع الظهور)
+  filterModalOverlayNew: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-start",
+    alignItems: "flex-end", // وضعها في الزاوية اليمنى
+    paddingTop: 320, // تعديل القيمة لجعله يظهر تحت زر الفلتر الجديد
+    paddingRight: 20, // ليتناسب مع زر الفلتر في الزاوية اليمنى
+  },
+  filterModalContent: {
+    backgroundColor: "#1e1e1e",
+    borderRadius: 10,
+    padding: 15,
+    width: 250,
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  filterModalTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    paddingBottom: 5,
+    borderBottomWidth: 1
+  },
+  
+  filterItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2a2a2a",
+  },
+  filterText: {
+    color: "#ccc",
+    fontSize: 15,
+  },
+  filterTextActive: {
+    color: "#00d4ff",
+    fontWeight: "600",
+  },
 });

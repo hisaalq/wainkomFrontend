@@ -20,9 +20,6 @@ import Icon from "react-native-vector-icons/Feather";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import LogoutButton from "./LogoutButton"; // تم استيراد مكون زر الخروج
 
-// ===============================================
-// 🆕 مكون المودال لعرض الشروط والأحكام
-// ===============================================
 const TermsModal = ({
   visible,
   onClose,
@@ -322,11 +319,6 @@ const modalStyles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-// ===============================================
-
-// ===============================================
-// 🎨 تنسيقات الشاشة
-// ===============================================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0b0f12" },
   cardHeader: { backgroundColor: "#0f1720", borderRadius: 12, padding: 14 },
