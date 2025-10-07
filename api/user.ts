@@ -13,6 +13,37 @@ export const getuser = async () => {
 };
 
 export const updateUser = async (userInfo: Partial<UserInfo>) => {
+  // If an image is a local file URI, send multipart/form-data for multer backends
+  const maybeImage = userInfo.image;
+  const looksLikeFileUri = typeof maybeImage === "string" && /^file:/.test(maybeImage);
+
+  if (looksLikeFileUri) {
+    const form = new FormData();
+    // append file
+    const uri = maybeImage as string;
+    const filename = uri.split("/").pop() || `avatar.jpg`;
+    const ext = filename.split(".").pop()?.toLowerCase();
+    const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : ext === "heic" || ext === "heif" ? "image/heic" : "image/jpeg";
+
+    form.append(
+      "image",
+      // React Native FormData file shape
+      { uri, name: filename, type: mime } as unknown as Blob
+    );
+
+    // append any other provided fields besides image
+    Object.entries(userInfo).forEach(([key, value]) => {
+      if (key === "image" || value === undefined || value === null) return;
+      form.append(key, String(value));
+    });
+
+    const { data } = await instance.put<UserInfo>("/updateprofile", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  }
+
+  // Fallback to JSON body when not uploading a file
   const { data } = await instance.put<UserInfo>("/updateprofile", userInfo);
   return data;
 };
