@@ -3,13 +3,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import instance from ".";
 
 export const getProfile = async () => {
-  const resp = await instance.get("/user/profile/");
-  return resp.data; 
+  const { data } = await instance.get<UserInfo>("/user/profile");
+  return data;
 };
 
 export const getuser = async () => {
-  const resp = await instance.get("/user/");
-  return resp.data; 
+  const { data } = await instance.get<UserInfo>("/user");
+  return data;
 };
 
 export const updateUser = async (userInfo: Partial<UserInfo>) => {
@@ -37,20 +37,26 @@ export const updateUser = async (userInfo: Partial<UserInfo>) => {
       form.append(key, String(value));
     });
 
-    const { data } = await instance.put<UserInfo>("/updateprofile", form, {
+    const { data } = await instance.put<UserInfo>("/user", form, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return data;
   }
 
   // Fallback to JSON body when not uploading a file
-  const { data } = await instance.put<UserInfo>("/updateprofile", userInfo);
+  const { data } = await instance.put<UserInfo>("/user", userInfo);
   return data;
 };
   
 
 export const logout = async () => {
   await AsyncStorage.removeItem("token");
+};
+
+export const deleteAccount = async () => {
+  const { data } = await instance.delete("/user");
+  await AsyncStorage.removeItem("token");
+  return data;
 };
 
 

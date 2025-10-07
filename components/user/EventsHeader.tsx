@@ -85,7 +85,7 @@ export default function EventsScreen({ userId, initialCategoryId }: { userId: st
   const [reviewVisible, setReviewVisible] = useState(false);
   const [isEngagedForSelected, setIsEngagedForSelected] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [savedEvents, setSavedEvents] = useState<string[]>([]); // الأحداث المحفوظة
+  const [savedEvents, setSavedEvents] = useState<string[]>([]);
   const categoriesScrollRef = useRef<ScrollView | null>(null);
   const catXPositionsRef = useRef<Record<string, number>>({});
 
@@ -501,11 +501,7 @@ export default function EventsScreen({ userId, initialCategoryId }: { userId: st
                   <Text style={styles.eventTitle}>{ev.title}</Text>
                   <TouchableOpacity onPress={() => toggleBookmark(ev._id)}>
                     <Ionicons
-                      name={
-                        savedEvents.includes(ev._id)
-                          ? "bookmark"
-                          : "bookmark-outline"
-                      }
+                      name={savedEvents.includes(ev._id) ? "bookmark" : "bookmark-outline"}
                       size={22}
                       color={savedEvents.includes(ev._id) ? "#00d4ff" : "#fff"}
                     />
