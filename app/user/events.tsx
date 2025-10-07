@@ -1,5 +1,5 @@
+import EventsHeader from "@/components/user/EventsHeader";
 import { useLocalSearchParams } from "expo-router";
-import EventsHeader from "../../components/EventsHeader";
 
 export default function event() {
   const params = useLocalSearchParams();

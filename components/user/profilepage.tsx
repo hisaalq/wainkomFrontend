@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import LogoutButton from "./LogoutButton"; // تم استيراد مكون زر الخروج
+import LogoutButton from "../auth/LogoutButton"; // تم استيراد مكون زر الخروج
 
 // ===============================================
 // 🆕 مكون المودال لعرض الشروط والأحكام

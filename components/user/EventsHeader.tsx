@@ -1,4 +1,7 @@
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { EventItem as BaseEventItem, fetchEvents } from "@/api/events";
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
+import ReviewModal from "@/components/ReviewModal";
 import AuthContext from "@/context/authcontext";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,9 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CategoryItem, fetchCategories } from "../api/categories";
-import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
-import ReviewModal from "./ReviewModal";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;

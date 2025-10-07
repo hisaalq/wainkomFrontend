@@ -1,7 +1,7 @@
 import { getProfile } from "@/api/user";
 import { COLORS } from "@/assets/style/color";
 import { LAYOUT, moreStyles, TYPO } from "@/assets/style/stylesheet";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/auth/LogoutButton";
 import { UserInfo } from "@/types/UserInfo";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ import {
   Image,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -101,19 +102,22 @@ export default function MoreScreenUser() {
     <SafeAreaView style={[LAYOUT.screen]}>
       <ScrollView contentContainerStyle={moreStyles.content}>
         {/* Profile Card */}
-        <View style={moreStyles.profileCard}>
+        <TouchableOpacity 
+          style={moreStyles.profileCard}
+          onPress={() => router.push("/myProfile" as any)}
+        >
           <Image 
             source={data.image ? { uri: data.image } : require("@/assets/images/placeholer.png")} 
             style={{ width: 42, height: 42, borderRadius: 21, marginRight: 12 }} 
           />
           <Text style={[TYPO.h2]}>{data.username}</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Menu cards */}
         <PressableCard
           left={<Ionicons name="calendar-outline" size={22} color={COLORS.primary} />}
           title="My Events"
-          onPress={() => router.push("/myevents" as any)}
+          onPress={() => router.push("/myEvents" as any)}
         />
 
         <PressableCard
