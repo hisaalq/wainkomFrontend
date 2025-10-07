@@ -4,11 +4,9 @@ import { deleteToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import React, { useContext, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -259,8 +257,8 @@ const OrganizerHomeScreen = () => {
               <TouchableOpacity
                 onPress={() => router.push("/organizer/profile")}
               >
-                {organizer?.image ? (
-                  <Image source={{ uri: organizer.image }} style={styles.avatar} />
+                {orgImage ? (
+                  <Image source={{ uri: orgImage }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Ionicons name="person" size={18} color={colors.muted} />
