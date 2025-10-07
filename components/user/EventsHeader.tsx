@@ -1,3 +1,5 @@
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { EventItem as BaseEventItem, fetchEvents } from "@/api/events";
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,11 +17,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-}
-
- from "react-native";
-import { CategoryItem, fetchCategories } from "../api/categories";
-import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
+} from "react-native";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
