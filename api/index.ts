@@ -6,7 +6,7 @@ import { getToken } from "./storage";
 const apiBaseUrl =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
-  "http://172.20.10.10:8000/api";
+  "http://localhost:8000/api";
 
 const instance = axios.create({
   baseURL: apiBaseUrl,

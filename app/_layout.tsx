@@ -61,6 +61,15 @@ export default function RootLayout() {
         }}
       >
         <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+        name="myProfile"
+        options={{
+          title: "Profile",   // Text in the header
+          headerShown: true,
+          headerStyle: { backgroundColor: COLORS.backgroundd },
+          headerTintColor: COLORS.primary,
+        }}
+      />
           <Stack.Protected guard={isAuthenticated}>
             {isOrganizer ? (
               <Stack.Screen name="organizer" />

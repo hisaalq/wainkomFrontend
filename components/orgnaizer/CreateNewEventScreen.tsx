@@ -125,7 +125,7 @@ function PlaceAutocomplete({
         const url =
           "https://maps.googleapis.com/maps/api/place/autocomplete/json" +
           `?input=${encodeURIComponent(debounced)}` +
-          `&key=${GOOGLE_PLACES_KEY}` +
+          `&key=${process.env.GOOGLE_PLACES_KEY}` +
           `&components=country:kw`;
         const res = await fetch(url);
         const json = await res.json();
@@ -161,7 +161,7 @@ function PlaceAutocomplete({
       const url =
         "https://maps.googleapis.com/maps/api/place/details/json" +
         `?place_id=${encodeURIComponent(place_id)}` +
-        `&key=${GOOGLE_PLACES_KEY}` +
+        `&key=${process.env.GOOGLE_PLACES_KEY}` +
         `&fields=geometry/location,name,formatted_address,place_id`;
       const res = await fetch(url);
       const json = await res.json();
