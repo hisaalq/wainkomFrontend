@@ -1,4 +1,5 @@
 import { COLORS } from "@/assets/style/color";
+import Fontisto from "@expo/vector-icons/build/Fontisto";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 
@@ -51,9 +52,9 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: "More",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog" color={color} size={size} />
+            <Fontisto name="more-v-a" color={color} size={size} />
           ),
         }}
       />

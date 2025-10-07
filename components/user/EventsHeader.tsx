@@ -1,8 +1,12 @@
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { EventItem as BaseEventItem, fetchEvents } from "@/api/events";
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
+import ReviewModal from "@/components/ReviewModal";
+import AuthContext from "@/context/authcontext";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,8 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CategoryItem, fetchCategories } from "../api/categories";
-import { EventItem as BaseEventItem, fetchEvents } from "../api/events";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
@@ -74,40 +76,21 @@ const isDateInPeriod = (
   return event > now && event <= end;
 };
 
-export default function EventsScreen({ userId }: { userId: string }) {
+export default function EventsScreen({ userId, initialCategoryId }: { userId: string; initialCategoryId?: string }) {
+  const auth = useContext(AuthContext);
   const queryClient = useQueryClient();
-  const [selectedCat, setSelectedCat] = useState("all");
+  const [selectedCat, setSelectedCat] = useState(initialCategoryId ?? "all");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [reviewVisible, setReviewVisible] = useState(false);
+  const [isEngagedForSelected, setIsEngagedForSelected] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [savedEvents, setSavedEvents] = useState<string[]>([]); // الأحداث المحفوظة
+  const categoriesScrollRef = useRef<ScrollView | null>(null);
+  const catXPositionsRef = useRef<Record<string, number>>({});
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("none");
   const [showFilterModal, setShowFilterModal] = useState(false);
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Intl.DateTimeFormat("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(new Date(dateString));
-    } catch {
-      return "Invalid date";
-    }
-  };
-
-  const formatTime = (dateString: string) => {
-    try {
-      return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      }).format(new Date(dateString));
-    } catch {
-      return "Invalid time";
-    }
-  };
 
   const {
     data: categories,
@@ -127,45 +110,102 @@ export default function EventsScreen({ userId }: { userId: string }) {
     queryFn: fetchEvents,
   });
 
+  const formatDate = (dateString: string) => {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(new Date(dateString));
+    } catch {
+      return "Invalid date";
+    }
+  };
+
+  useEffect(() => {
+    if (initialCategoryId) {
+      setSelectedCat(initialCategoryId);
+    }
+  }, [initialCategoryId]);
+
+  // Ensure selected category chip is visible by auto-scrolling the horizontal list
+  useEffect(() => {
+    if (!categories || selectedCat === "all") {
+      // scroll to start for "All"
+      categoriesScrollRef.current?.scrollTo({ x: 0, animated: true });
+      return;
+    }
+    const targetMeta = (categories as CategoryItem[] | undefined)?.find(
+      (c) => c._id === selectedCat || c.key === selectedCat
+    );
+    const key = targetMeta?._id || targetMeta?.key;
+    if (!key) return;
+    const x = catXPositionsRef.current[String(key)];
+    if (typeof x === "number") {
+      // offset a bit so the chip is comfortably in view
+      const offset = Math.max(x - 20, 0);
+      // slight delay to ensure layout finished
+      requestAnimationFrame(() => {
+        categoriesScrollRef.current?.scrollTo({ x: offset, animated: true });
+      });
+    }
+  }, [selectedCat, categories]);
+  
+
+  const formatTime = (dateString: string) => {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      }).format(new Date(dateString));
+    } catch {
+      return "Invalid time";
+    }
+  };
+
+  // queries already defined above
+
   const events = (eventsRaw as EventItem[] | undefined) ?? [];
 
-  const sortedAndFilteredEvents = useMemo(() => {
-    let list = events.filter((ev) => {
-      const matchSearch = ev.title
-        ?.toLowerCase()
-        .includes(searchText.toLowerCase());
-      const matchCat = selectedCat === "all" || ev.categoryId === selectedCat;
-      return matchSearch && matchCat;
-    });
-
-    if (activeFilter.startsWith("date_")) {
-      list = list.filter((ev) =>
-        isDateInPeriod(ev.date, activeFilter as any)
+  const filteredEvents = useMemo(() => {
+    // Build alias set for selected category: accept either _id or key
+    let acceptedIds = new Set<string>();
+    if (selectedCat !== "all") {
+      acceptedIds.add(String(selectedCat));
+      const selectedMeta = (categories as CategoryItem[] | undefined)?.find(
+        (c) => c._id === selectedCat || c.key === selectedCat
       );
+      if (selectedMeta) {
+        if (selectedMeta._id) acceptedIds.add(String(selectedMeta._id));
+        if (selectedMeta.key) acceptedIds.add(String(selectedMeta.key));
+      }
     }
 
-    list.sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-
-      if (activeFilter === "name_asc" || activeFilter === "name_desc") {
-        const titleA = a.title?.toLowerCase() || "";
-        const titleB = b.title?.toLowerCase() || "";
-        const comparison = titleA.localeCompare(titleB);
-        return activeFilter === "name_asc" ? comparison : -comparison;
-      }
-
-      return dateA - dateB;
+    return events.filter((ev) => {
+      const matchSearch = ev.title?.toLowerCase().includes(searchText.toLowerCase());
+      const matchCat =
+        selectedCat === "all" || (ev.categoryId ? acceptedIds.has(String(ev.categoryId)) : false);
+      return matchSearch && matchCat;
     });
+  }, [events, searchText, selectedCat, categories]);
 
-    return list;
-  }, [events, searchText, selectedCat, activeFilter]);
-
-  const filteredEvents = sortedAndFilteredEvents;
+  const eventTimeHasPassed = (ev: EventItem) => {
+    try {
+      const [hh, mm] = (String((ev as any).time || "00:00")).split(":").map(Number);
+      const dt = new Date(ev.date);
+      dt.setHours((hh || 0), (mm || 0), 0, 0);
+      return Date.now() > dt.getTime();
+    } catch {
+      return false;
+    }
+  };
 
   const openEvent = (ev: EventItem) => {
     setSelectedEvent(ev);
     setModalVisible(true);
+    // initialize engagement state from saved bookmarks
+    setIsEngagedForSelected(savedEvents.includes(ev._id));
   };
 
   const saveMutation = useMutation({
@@ -372,6 +412,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesRow}
+          ref={(ref) => {
+            categoriesScrollRef.current = ref;
+          }}
         >
           <TouchableOpacity
             style={[
@@ -379,6 +422,9 @@ export default function EventsScreen({ userId }: { userId: string }) {
               selectedCat === "all" && styles.catCardActive,
             ]}
             onPress={() => setSelectedCat("all")}
+            onLayout={(e) => {
+              catXPositionsRef.current["all"] = e.nativeEvent.layout.x;
+            }}
           >
             <MaterialCommunityIcons
               name="shape"
@@ -405,19 +451,23 @@ export default function EventsScreen({ userId }: { userId: string }) {
               key={c._id}
               style={[
                 styles.catCard,
-                selectedCat === c._id && styles.catCardActive,
+                (selectedCat === c._id || selectedCat === c.key) && styles.catCardActive,
               ]}
-              onPress={() => setSelectedCat(c._id)}
+              onPress={() => setSelectedCat(c._id || c.key)}
+              onLayout={(e) => {
+                const id = c._id || c.key;
+                if (id) catXPositionsRef.current[String(id)] = e.nativeEvent.layout.x;
+              }}
             >
               <MaterialCommunityIcons
                 name={((c as any).icon as any) ?? "shape-outline"}
                 size={28}
-                color={selectedCat === c._id ? "#00d4ff" : "#aaa"}
+                color={(selectedCat === c._id || selectedCat === c.key) ? "#00d4ff" : "#aaa"}
               />
               <Text
                 style={[
                   styles.catText,
-                  selectedCat === c._id && { color: "#00d4ff" },
+                  (selectedCat === c._id || selectedCat === c.key) && { color: "#00d4ff" },
                 ]}
               >
                 {c.name as any}
@@ -500,10 +550,21 @@ export default function EventsScreen({ userId }: { userId: string }) {
                   </View>
                 </View>
 
-                <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={16} color="#ffd700" />
-                  <Text style={styles.ratingText}>{ev.rating}</Text>
-                </View>
+                {Number(ev.rating) > 0 && eventTimeHasPassed(ev) && (
+                  <View style={styles.ratingRow}>
+                    <Ionicons name="star" size={16} color="#ffd700" />
+                    <Text style={styles.ratingText}>{ev.rating}</Text>
+                  </View>
+                )}
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedEvent(ev);
+                  setModalVisible(true);
+                }}
+                style={{ marginTop: 8, alignSelf: "flex-end" }}
+              >
+                <Text style={{ color: "#00d4ff" }}>View</Text>
+              </TouchableOpacity>
               </View>
             </TouchableOpacity>
           );
@@ -535,6 +596,42 @@ export default function EventsScreen({ userId }: { userId: string }) {
                   <Text style={styles.modalInfo}>
                     📍 {readableLocation(selectedEvent)}
                   </Text>
+              {(() => {
+                const [hh, mm] = (String((selectedEvent as any).time || "00:00")).split(":").map(Number);
+                const dt = new Date(selectedEvent.date);
+                dt.setHours((hh || 0), (mm || 0), 0, 0);
+                const eventTimePassed = Date.now() > dt.getTime();
+                const canOpenReview = auth.isAuthenticated && isEngagedForSelected && eventTimePassed;
+
+                if (!auth.isAuthenticated) {
+                  return (
+                    <View style={{ marginTop: 12, opacity: 0.8 }}>
+                      <Text style={{ color: "#aaa", textAlign: "center" }}>Sign in to rate this event.</Text>
+                    </View>
+                  );
+                }
+
+                if (!isEngagedForSelected) {
+                  return null;
+                }
+
+                if (!eventTimePassed) {
+                  return (
+                    <View style={{ marginTop: 12, opacity: 0.8 }}>
+                      <Text style={{ color: "#aaa", textAlign: "center" }}>Rating opens after the event time has passed.</Text>
+                    </View>
+                  );
+                }
+
+                return (
+                  <TouchableOpacity
+                    style={[styles.closeBtn, { backgroundColor: "#007aff", marginTop: 12 }]}
+                    onPress={() => setReviewVisible(true)}
+                  >
+                    <Text style={styles.btnText}>Rate / Review</Text>
+                  </TouchableOpacity>
+                );
+              })()}
                 </>
               ) : (
                 <Text style={{ color: "red" }}>No event selected</Text>
@@ -552,6 +649,19 @@ export default function EventsScreen({ userId }: { userId: string }) {
             </View>
           </View>
         </Modal>
+
+        {selectedEvent && (
+          <ReviewModal
+            visible={reviewVisible}
+            onClose={() => setReviewVisible(false)}
+            eventId={selectedEvent._id}
+            eventDateISO={selectedEvent.date}
+            eventTime={(selectedEvent as any).time}
+            isAuthenticated={auth.isAuthenticated}
+            isEngaged={isEngagedForSelected}
+            onEngaged={() => setIsEngagedForSelected(true)}
+          />
+        )}
       </ScrollView>
       <FilterModal />
     </SafeAreaView>
