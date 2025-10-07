@@ -1,11 +1,249 @@
-import { Text, View } from "react-native";
-// app/index.tsx
-import LogoutButton from "@/components/auth/LogoutButton";
+import { CategoryItem, fetchCategories } from "@/api/categories";
+import { EventItem, fetchEvents } from "@/api/events";
+import { LAYOUT, SPACING, TYPO } from "@/assets/style/stylesheet";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+type EventsByCategory = Record<string, EventItem[]>;
 
 export default function Index() {
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [locationLabel, setLocationLabel] = useState<string>("Location");
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const [ev, cats] = await Promise.all([fetchEvents(), fetchCategories()]);
+        if (!isMounted) return;
+        setEvents(Array.isArray(ev) ? ev : []);
+        setCategories(Array.isArray(cats) ? cats : []);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Resolve user's city using Google Geocoding API
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const perm = await Location.requestForegroundPermissionsAsync();
+        if (perm.status !== "granted") {
+          if (!cancelled) setLocationLabel("Kuwait City, KW");
+          return;
+        }
+        const pos = await Location.getCurrentPositionAsync({});
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const key = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || (process.env as any).GOOGLE_API_KEY;
+        if (!key) {
+          // Fallback to city via Expo reverse geocode if API key missing
+          const local = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+          const best = local?.[0];
+          if (!cancelled) setLocationLabel(`${best?.city || best?.subregion || "Unknown"}, ${best?.isoCountryCode || ""}`.trim());
+          return;
+        }
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${key}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const comp = data?.results?.[0]?.address_components as Array<any> | undefined;
+        const byType = (t: string) => comp?.find((c) => (c.types || []).includes(t))?.long_name;
+        const city = byType("locality") || byType("administrative_area_level_1") || byType("sublocality") || "Unknown";
+        const country = byType("country") || "";
+        if (!cancelled) setLocationLabel(`${city}, ${country}`.trim());
+      } catch {
+        if (!cancelled) setLocationLabel("Kuwait City, KW");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const trending: EventItem | undefined = useMemo(() => {
+    if (!events.length) return undefined;
+    // Heuristic: prefer highest rating, otherwise the soonest upcoming by date
+    const byRating = [...events].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    const topRated = byRating[0];
+    if (topRated && (topRated.rating ?? 0) > 0) return topRated;
+    const byDate = [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return byDate[0];
+  }, [events]);
+
+  const eventsByCategory: EventsByCategory = useMemo(() => {
+    const map: EventsByCategory = {};
+    for (const e of events) {
+      const key = e.categoryId ?? "uncategorized";
+      if (!map[key]) map[key] = [];
+      map[key].push(e);
+    }
+    return map;
+  }, [events]);
+
+  const getCategoryName = (id: string | undefined) => {
+    if (!id) return "Other";
+    const c = categories.find((x) => x._id === id || x.key === id || (typeof x.name === "string" && x.name === id));
+    return c?.label || (typeof c?.name === "string" ? c?.name : undefined) || "Other";
+  };
+
+  const renderEventCard = (item: EventItem) => {
+    return (
+      <TouchableOpacity
+        key={item._id}
+        style={{ backgroundColor: '#0F1A1C', borderRadius: 14, borderWidth: 1, borderColor: '#213336', padding: 12, marginRight: 12, width: 260 }}
+        onPress={() => {
+          setSelectedEvent(item);
+          setModalVisible(true);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Open details for ${item.title}`}
+        activeOpacity={0.9}
+      >
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={{ width: '100%', height: 140, borderRadius: 12, marginBottom: 10 }} />
+        ) : null}
+        <Text style={{ color: '#E6F1F2', fontWeight: '800', fontSize: 16 }} numberOfLines={1}>{item.title}</Text>
+        {item.description || item.desc ? (
+          <Text style={{ color: '#8EA3A5', marginTop: 4 }} numberOfLines={2}>{item.description ?? item.desc}</Text>
+        ) : null}
+        <View style={{ flexDirection: 'row', marginTop: 8, columnGap: 10 }}>
+          {!!item.date && <Text style={{ color: '#8EA3A5', fontSize: 12 }}>{new Date(item.date).toDateString()}</Text>}
+          {!!item.time && <Text style={{ color: '#8EA3A5', fontSize: 12 }}>{item.time}</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[LAYOUT.screen, LAYOUT.center]}>
+        <Text style={TYPO.body}>Loading…</Text>
+      </View>
+    );
+  }
+
   return (
-  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-  <Text>User Home</Text>
-  <LogoutButton />
-</View>)
+    <ScrollView style={LAYOUT.screen} contentContainerStyle={{ paddingBottom: SPACING.xl + 10 }}>
+      {/* Top header: current location + profile avatar */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.lg }}>
+        <View>
+          <Text style={[TYPO.muted, { marginBottom: 2 }]}>Location</Text>
+          <Text style={TYPO.h2} numberOfLines={1}>{locationLabel}</Text>
+        </View>
+        <TouchableOpacity onPress={() => router.push('/user/settings')} accessibilityRole="button" accessibilityLabel="Open profile">
+          <Image source={require('../../assets/images/placeholer.png')} style={{ width: 36, height: 36, borderRadius: 18 }} />
+        </TouchableOpacity>
+      </View>
+      {/* Featured / Trending banner */}
+      {trending ? (
+        <View style={{ marginBottom: SPACING.lg }}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={{ borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: '#213336' }}
+            onPress={() => {
+              setSelectedEvent(trending);
+              setModalVisible(true);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Open details for ${trending.title}`}
+          >
+            {trending.image ? (
+              <Image source={{ uri: trending.image }} style={{ width: '100%', height: 200 }} />
+            ) : (
+              <View style={[LAYOUT.center, { height: 200, backgroundColor: '#0F1A1C' }]}>
+                <Text style={TYPO.h2}>{trending.title}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={{ marginTop: 10 }}>
+            <Text style={TYPO.h2} numberOfLines={1}>{trending.title}</Text>
+            {trending.description || trending.desc ? (
+              <Text style={TYPO.muted} numberOfLines={2}>{trending.description ?? trending.desc}</Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {/* Category sections */}
+      {categories.map((cat) => {
+        const items = eventsByCategory[cat._id] || eventsByCategory[cat.key] || [];
+        if (!items.length) return null;
+        const heading = cat.label || (typeof cat.name === "string" ? cat.name : "");
+        return (
+          <View key={cat._id || cat.key} style={{ marginBottom: SPACING.xl }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={TYPO.h2}>{heading}</Text>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/user/events', params: { categoryId: cat._id } })}
+                accessibilityRole="button"
+                accessibilityLabel={`See all ${heading} events`}
+              >
+                <Text style={TYPO.link}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row' }}>
+                {items.map(renderEventCard)}
+              </View>
+            </ScrollView>
+          </View>
+        );
+      })}
+
+      {/* Event details modal */}
+      <Modal visible={modalVisible} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#1e1e1e', borderRadius: 16, padding: 18, width: '88%' }}>
+            {selectedEvent ? (
+              <View>
+                {selectedEvent.image ? (
+                  <Image source={{ uri: selectedEvent.image }} style={{ width: '100%', height: 200, borderRadius: 12, marginBottom: 12 }} />
+                ) : null}
+                <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 8 }} numberOfLines={2}>{selectedEvent.title}</Text>
+                {selectedEvent.description || (selectedEvent as any).desc ? (
+                  <Text style={{ color: '#bbb', fontSize: 15, lineHeight: 22, marginBottom: 10 }}>
+                    {selectedEvent.description ?? (selectedEvent as any).desc}
+                  </Text>
+                ) : null}
+                <View style={{ rowGap: 6, marginTop: 4 }}>
+                  {!!selectedEvent.date && (
+                    <Text style={{ color: '#aaa' }}>🗓 {new Date(selectedEvent.date).toDateString()}</Text>
+                  )}
+                  {!!selectedEvent.time && (
+                    <Text style={{ color: '#aaa' }}>⏰ {selectedEvent.time}</Text>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <Text style={{ color: 'red' }}>No event selected</Text>
+            )}
+
+            <TouchableOpacity
+              style={{ marginTop: 16, backgroundColor: '#00d4ff', paddingVertical: 12, borderRadius: 10, alignItems: 'center' }}
+              onPress={() => {
+                setModalVisible(false);
+                setSelectedEvent(null);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Close event details"
+            >
+              <Text style={{ color: '#000', fontWeight: '800' }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
+  );
 }
