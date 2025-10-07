@@ -8,7 +8,17 @@ import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
 
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -60,16 +70,12 @@ export default function RootLayout() {
           setUsername,
         }}
       >
-        <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen
-        name="myProfile"
-        options={{
-          title: "Profile",   // Text in the header
-          headerShown: true,
-          headerStyle: { backgroundColor: COLORS.backgroundd },
-          headerTintColor: COLORS.primary,
-        }}
-      />
+        <Stack
+          screenOptions={{ headerShown: false }}
+          initialRouteName={
+            isAuthenticated ? (isOrganizer ? "organizer" : "user") : "(auth)"
+          }
+        >
           <Stack.Protected guard={isAuthenticated}>
             {isOrganizer ? (
               <Stack.Screen name="organizer" />
