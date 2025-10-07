@@ -4,9 +4,10 @@ import { deleteToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -48,9 +49,19 @@ type EventDoc = {
 
 const OrganizerHomeScreen = () => {
   const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
-  const [events, setEvents] = useState<EventDoc[]>([]);
-  const [orgImage, setOrgImage] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: events = [], isLoading: eventsLoading, isFetching: eventsFetching } = useQuery<EventDoc[]>({
+    queryKey: ["organizer", "events"],
+    queryFn: fetchEventsApi,
+    placeholderData: (prev) => prev,
+  });
+
+  const { data: organizer, isLoading: orgLoading } = useQuery({
+    queryKey: ["organizerProfile"],
+    queryFn: getOrgProfile,
+    placeholderData: (prev) => prev,
+  });
 
   const [selectedEvent, setSelectedEvent] = useState<EventDoc | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -74,30 +85,10 @@ const OrganizerHomeScreen = () => {
     ]);
   };
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [eventsData, org] = await Promise.allSettled([
-        fetchEventsApi(),
-        getOrgProfile(),
-      ]);
-      if (eventsData.status === "fulfilled") setEvents(eventsData.value);
-      if (org.status === "fulfilled") setOrgImage(org.value?.image);
-    } catch (err) {
-      console.log("Load error:", err);
-    } finally {
-      setLoading(false);
-    }
+  const refetchOrganizerData = () => {
+    queryClient.invalidateQueries({ queryKey: ["organizer", "events"] });
+    queryClient.invalidateQueries({ queryKey: ["organizerProfile"] });
   };
-
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(() => {
-      // refresh periodically (optional)
-      loadData();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const openEdit = (event: EventDoc) => {
     setSelectedEvent(event);
@@ -137,7 +128,7 @@ const OrganizerHomeScreen = () => {
       });
       Alert.alert("Updated", "Event updated successfully!");
       setEditModalVisible(false);
-      loadData();
+      refetchOrganizerData();
     } catch (err) {
       Alert.alert("Error", "Failed to update event.");
     }
@@ -153,7 +144,7 @@ const OrganizerHomeScreen = () => {
           try {
             await deleteEventApi(eventId);
             Alert.alert("Deleted", "Event has been deleted.");
-            loadData();
+            refetchOrganizerData();
           } catch {
             Alert.alert("Error", "Failed to delete event.");
           }
@@ -171,7 +162,7 @@ const OrganizerHomeScreen = () => {
     });
   };
 
-  if (loading) {
+  if (eventsLoading || orgLoading) {
     return (
       <View
         style={{
@@ -224,8 +215,8 @@ const OrganizerHomeScreen = () => {
               <TouchableOpacity
                 onPress={() => router.push("/organizer/profile")}
               >
-                {orgImage ? (
-                  <Image source={{ uri: orgImage }} style={styles.avatar} />
+                {organizer?.image ? (
+                  <Image source={{ uri: organizer.image }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Ionicons name="person" size={18} color={colors.muted} />
