@@ -1,9 +1,27 @@
+import { deleteToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
+import AuthContext from "@/context/authcontext";
+import { Ionicons } from "@expo/vector-icons";
 import Fontisto from "@expo/vector-icons/build/Fontisto";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
+import { useContext } from "react";
+import { Pressable } from "react-native";
 
 const TabsLayout = () => {
+  const router = useRouter();
+  const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
+
+  const handleLogout = async () => {
+    try {
+      await deleteToken();
+    } finally {
+      setIsAuthenticated(false);
+      setIsOrganizer(false);
+      router.replace("/");
+    }
+  };
+  
   return (
     <Tabs
       screenOptions={{
@@ -22,6 +40,14 @@ const TabsLayout = () => {
           title: "Home",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home" color={color} size={size} />
+          ),
+          headerRight: () => (
+            <Pressable
+              onPress={handleLogout}
+              style={{ marginRight: 16 }}
+            >
+              <Ionicons name="log-out-outline" size={24} color={COLORS.primary} />
+            </Pressable>
           ),
         }}
       />

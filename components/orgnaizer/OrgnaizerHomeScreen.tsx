@@ -6,13 +6,7 @@ import AuthContext from "@/context/authcontext";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import {
-  default as React,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -57,8 +51,6 @@ const OrganizerHomeScreen = () => {
 
   const [events, setEvents] = useState<EventDoc[]>([]);
   const [orgImage, setOrgImage] = useState<string | undefined>(undefined);
-
-  // 👇 separate initial loading vs background refresh
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -86,7 +78,6 @@ const OrganizerHomeScreen = () => {
     ]);
   };
 
-  // Load data — `opts.initial` controls which spinner to use
   const loadData = async (opts: { initial?: boolean } = {}) => {
     const isInitial = !!opts.initial;
     try {
@@ -106,21 +97,17 @@ const OrganizerHomeScreen = () => {
       console.log("Load error:", err);
     } finally {
       if (!mountedRef.current) return;
-      if (opts.initial) setLoading(false);
+      if (isInitial) setLoading(false);
       else setRefreshing(false);
     }
   };
 
   useEffect(() => {
     mountedRef.current = true;
-    // First load shows full-screen spinner
     loadData({ initial: true });
-
-    // Background refresh every 15s (less flicker + lighter)
     const interval = setInterval(() => {
-      loadData({ initial: false }); // silent refresh
+      loadData({ initial: false });
     }, 15000);
-
     return () => {
       mountedRef.current = false;
       clearInterval(interval);
@@ -165,9 +152,8 @@ const OrganizerHomeScreen = () => {
       });
       Alert.alert("Updated", "Event updated successfully!");
       setEditModalVisible(false);
-      // Soft refresh after update
       loadData({ initial: false });
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Failed to update event.");
     }
   };
@@ -182,7 +168,6 @@ const OrganizerHomeScreen = () => {
           try {
             await deleteEventApi(eventId);
             Alert.alert("Deleted", "Event has been deleted.");
-            // Soft refresh after delete
             loadData({ initial: false });
           } catch {
             Alert.alert("Error", "Failed to delete event.");
@@ -202,7 +187,6 @@ const OrganizerHomeScreen = () => {
   };
 
   if (loading) {
-    // Only on the very first load
     return (
       <View
         style={{
@@ -228,14 +212,12 @@ const OrganizerHomeScreen = () => {
           contentContainerStyle={{ paddingBottom: 16 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* ===== Top Header ===== */}
           <View style={styles.topHeader}>
             <Text style={styles.appTitle}>EventHub Kuwait</Text>
 
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
-              {/* Small spinner for background refresh */}
               {refreshing && (
                 <ActivityIndicator size="small" color={colors.primary} />
               )}
@@ -271,6 +253,12 @@ const OrganizerHomeScreen = () => {
                   </View>
                 )}
               </TouchableOpacity>
+
+              {/* Optional logout button beside the plus (uncomment if you want it visible)
+              <TouchableOpacity style={styles.circleBtn} onPress={handleLogout}>
+                <Ionicons name="log-out-outline" size={18} color={colors.text} />
+              </TouchableOpacity>
+              */}
             </View>
           </View>
 
@@ -313,7 +301,6 @@ const OrganizerHomeScreen = () => {
         </ScrollView>
       </View>
 
-      {/* Edit Modal */}
       <Modal visible={editModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -445,8 +432,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionText: { color: "#fff", fontWeight: "700", fontSize: 12 },
-
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
