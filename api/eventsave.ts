@@ -9,6 +9,7 @@ export interface Engagement {
   createdAt: string;
   updatedAt: string;
 }
+
 export const saveEngagementApi = async (eventId: string) => {
   const { data } = await instance.post("/engagement", { eventId });
   return data;
