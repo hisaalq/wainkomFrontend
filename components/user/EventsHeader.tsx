@@ -80,7 +80,11 @@ export default function EventsScreen({ userId }: { userId: string }) {
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [savedEvents, setSavedEvents] = useState<string[]>([]); 
+
+  const [savedEvents, setSavedEvents] = useState<string[]>([]);
+  const categoriesScrollRef = useRef<ScrollView | null>(null);
+  const catXPositionsRef = useRef<Record<string, number>>({});
+
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("none");
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -448,11 +452,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
                   <Text style={styles.eventTitle}>{ev.title}</Text>
                   <TouchableOpacity onPress={() => toggleBookmark(ev._id)}>
                     <Ionicons
-                      name={
-                        savedEvents.includes(ev._id)
-                          ? "bookmark"
-                          : "bookmark-outline"
-                      }
+                      name={savedEvents.includes(ev._id) ? "bookmark" : "bookmark-outline"}
                       size={22}
                       color={savedEvents.includes(ev._id) ? "#00d4ff" : "#fff"}
                     />

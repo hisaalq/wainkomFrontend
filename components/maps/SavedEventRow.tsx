@@ -19,8 +19,8 @@ export default function SavedEventRow({ id, title, subtitle, isSaved = true, onP
       style={{ paddingVertical: 12, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
     >
       <View style={{ flexShrink: 1, paddingRight: 12 }}>
-        <Text style={{ fontWeight: "700" }}>{title}</Text>
-        {subtitle ? <Text style={{ opacity: 0.7 }} numberOfLines={1}>{subtitle}</Text> : null}
+        <Text style={{ fontWeight: "700", color: COLORS.text }}>{title}</Text>
+        {subtitle ? <Text style={{ color: COLORS.muted }} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
       <Pressable onPress={() => onToggleSave?.(id, isSaved)} hitSlop={12}>
         <Text style={{ fontSize: 20 }}>{isSaved ? "❤️" : "🤍"}</Text>

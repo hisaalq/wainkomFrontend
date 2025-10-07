@@ -3,10 +3,13 @@ import axios from "axios";
 import { getToken } from "./storage";
 
 // Prefer env-configured API base URL; fall back to localhost
-const apiBaseUrl =
+export const apiBaseUrl =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
   "http://localhost:8000/api";
+
+// Useful for building absolute asset URLs when backend returns relative paths
+export const apiOrigin = apiBaseUrl.replace(/\/?api\/?$/i, "");
 
 const instance = axios.create({
   baseURL: apiBaseUrl,

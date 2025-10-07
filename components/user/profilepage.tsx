@@ -1,15 +1,14 @@
-import {
-  Engagement,
-  fetchEngagementByIdApi,
-  removeEngagementApi,
-} from "@/api/eventsave";
+import { apiOrigin } from "@/api";
+// Engagement feature removed
+import { deleteAccount, getProfile, updateUser } from "@/api/user";
+import { BUTTONS, LAYOUT, TYPO } from "@/assets/style/stylesheet";
 import AuthContext from "@/context/authcontext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
+import { router, useNavigation } from "expo-router";
+import React, { useContext, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  FlatList,
   Image,
   Modal,
   ScrollView,
@@ -17,218 +16,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import Icon from "react-native-vector-icons/Feather";
+// Feather icons no longer needed after removing engagement
 import Ionicons from "react-native-vector-icons/Ionicons";
-// 🚀 تم تعديل مسار الاستيراد ليتناسب مع هيكلية: 'components/user/'
-import LogoutButton from "../auth/LogoutButton";
-
-// 💡 الاستيرادات الإضافية لعملية التعديل
-import { UserInfo } from "@/types";
-import { getProfile, updateUser } from "../../api/user";
-
-// 💡 دالة dummy لاختيار الصورة
-const pickImage = async (): Promise<string | undefined> => {
-  Alert.alert("اختيار صورة", "يرجى تطبيق منطق مكتبة اختيار الصور هنا.");
-  return undefined;
-};
-
-// ===============================================
-// 🚀 مكون مودال تعديل البروفايل (EditProfileModalContent)
-// ===============================================
-const EditProfileModalContent = ({
-  visible,
-  onClose,
-  onUpdateSuccess,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onUpdateSuccess: () => void;
-}) => {
-  // ... (الكود يبقى كما هو من الرد السابق) ...
-  const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [formData, setFormData] = useState<
-    Partial<UserInfo & { image: string }>
-  >({ image: "" });
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (visible) {
-      const fetchUserData = async () => {
-        try {
-          setLoading(true);
-          const data: UserInfo = await getProfile();
-
-          setFormData({
-            ...data,
-            image:
-              data.image ||
-              "https://via.placeholder.com/150/00d4ff/0b0f12?text=Avatar",
-            bio: data.bio || "",
-            phone: data.phone || "",
-          });
-        } catch (e) {
-          setError("فشل في جلب البيانات.");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchUserData();
-    }
-  }, [visible]);
-
-  const handleChange = (key: keyof UserInfo, value: string) => {
-    setFormData({ ...formData, [key]: value });
-  };
-
-  const handleImagePick = async () => {
-    const imageUri = await pickImage();
-    if (imageUri) {
-      setFormData({ ...formData, image: imageUri });
-    }
-  };
-
-  const handleUpdate = async () => {
-    setIsUpdating(true);
-    setError(null);
-    try {
-      await updateUser(formData);
-      Alert.alert("نجاح", "تم تحديث البروفايل بنجاح!");
-      onUpdateSuccess();
-      onClose();
-    } catch (e: any) {
-      const errorMessage =
-        e.response?.data?.message || "فشل التحديث. يرجى التحقق من البيانات.";
-      setError(errorMessage);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={editModalStyles.centeredView}>
-        <View style={editModalStyles.modalView}>
-          <View style={editModalStyles.modalHeader}>
-            <Text style={editModalStyles.headerText}>تعديل البروفايل</Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={editModalStyles.closeButton}
-            >
-              <Icon name="x" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={{ flex: 1 }}>
-            {loading ? (
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: 200,
-                }}
-              >
-                <ActivityIndicator size="large" color="#00d4ff" />
-                <Text style={{ color: "#fff", marginTop: 10 }}>
-                  جاري التحميل...
-                </Text>
-              </View>
-            ) : (
-              <>
-                <View style={editModalStyles.imageContainer}>
-                  <Image
-                    source={{ uri: formData.image }}
-                    style={editModalStyles.profileImage}
-                  />
-                  <TouchableOpacity
-                    style={editModalStyles.imageButton}
-                    onPress={handleImagePick}
-                  >
-                    <Icon name="camera" size={24} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={editModalStyles.inputGroup}>
-                  <Text style={editModalStyles.label}>اسم المستخدم</Text>
-                  <TextInput
-                    style={editModalStyles.input}
-                    value={formData.username}
-                    onChangeText={(text) => handleChange("username", text)}
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
-                <View style={editModalStyles.inputGroup}>
-                  <Text style={editModalStyles.label}>البريد الإلكتروني</Text>
-                  <TextInput
-                    style={editModalStyles.input}
-                    value={formData.email}
-                    onChangeText={(text) => handleChange("email", text)}
-                    keyboardType="email-address"
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
-                <View style={editModalStyles.inputGroup}>
-                  <Text style={editModalStyles.label}>الهاتف</Text>
-                  <TextInput
-                    style={editModalStyles.input}
-                    value={formData.phone}
-                    onChangeText={(text) => handleChange("phone", text)}
-                    keyboardType="phone-pad"
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
-                <View style={editModalStyles.inputGroup}>
-                  <Text style={editModalStyles.label}>الجهة / المؤسسة</Text>
-                </View>
-                <View style={editModalStyles.inputGroup}>
-                  <Text style={editModalStyles.label}>النبذة</Text>
-                  <TextInput
-                    style={[editModalStyles.input, editModalStyles.textArea]}
-                    value={formData.bio}
-                    onChangeText={(text) => handleChange("bio", text)}
-                    multiline
-                    numberOfLines={4}
-                    placeholderTextColor="#9ca3af"
-                  />
-                </View>
-
-                {error && (
-                  <Text style={editModalStyles.errorText}>{error}</Text>
-                )}
-
-                <TouchableOpacity
-                  style={[
-                    editModalStyles.updateButton,
-                    isUpdating && editModalStyles.disabledButton,
-                  ]}
-                  onPress={handleUpdate}
-                  disabled={isUpdating}
-                >
-                  <Text style={editModalStyles.buttonText}>
-                    {isUpdating ? "جاري التحديث..." : "تحديث البروفايل"}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-            <View style={{ height: 40 }} />
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-};
 // ===============================================
 
-// ... (مكون TermsModal يبقى كما هو) ...
-const TermsModal = ({
+const PrivacyModal = ({
   visible,
   onClose,
 }: {
@@ -237,64 +31,34 @@ const TermsModal = ({
 }) => {
   // ... (الكود الخاص بـ TermsModal لا يتغير) ...
   const [isArabic, setIsArabic] = useState(true);
-
-  const title = isArabic ? "الشروط والأحكام" : "Terms and Conditions";
+  const title = isArabic ? "سياسة الخصوصية" : "Privacy Policy";
   const languageToggleText = isArabic ? "English" : "العربية";
-
-  const termsArabic = `
-    مرحبًا بك في برنامج وياكم.
-    1. قبول الشروط: باستخدامك للبرنامج، فإنك توافق على الالتزام بهذه الشروط.
-    2. خصوصية البيانات: يتم التعامل مع بيانات المستخدمين بسرية تامة وعدم مشاركتها مع أي طرف ثالث.
-    3. الفعاليات: البرنامج يوفر معلومات عن فعاليات خارجية، ولا يتحمل مسؤولية محتوى هذه الفعاليات أو إلغائها.
-    4. حقوق الملكية الفكرية: جميع محتويات البرنامج محمية بحقوق النشر لبرنامج وياكم.
-    5. الإنهاء: يحتفظ برنامج وياكم بالحق في إنهاء وصول أي مستخدم يخالف هذه الشروط.
+  const policyAr = `
+    نحن نحترم خصوصيتك. نجمع أقل قدر من البيانات اللازمة لتقديم الخدمة،
+    ولا نشارك معلوماتك مع أطراف ثالثة إلا عند الضرورة القانونية أو بموافقتك.
+    يمكنك طلب حذف بياناتك في أي وقت.
   `;
-
-  const termsEnglish = `
-    Welcome to Wayyakum program.
-    1. Acceptance of Terms: By using the program, you agree to be bound by these Terms and Conditions.
-    2. Data Privacy: User data is handled with strict confidentiality and will not be shared with any third party.
-    3. Events: The program provides information about external events and is not responsible for the content or cancellation of these events.
-    4. Intellectual Property: All program content is copyrighted by Wayyakum program.
-    5. Termination: Wayyakum program reserves the right to terminate access for any user who violates these terms.
+  const policyEn = `
+    We respect your privacy. We collect the minimum data required to deliver the service
+    and never share your information with third parties except when legally required or with your consent.
+    You can request deletion of your data at any time.
   `;
-
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={modalStyles.centeredView}>
         <View style={modalStyles.modalView}>
           <View style={modalStyles.modalHeader}>
             <Text style={modalStyles.modalTitle}>{title}</Text>
-            <TouchableOpacity
-              onPress={() => setIsArabic(!isArabic)}
-              style={modalStyles.languageToggle}
-            >
-              <Ionicons
-                name="language"
-                size={20}
-                color="#00d4ff"
-                style={{ marginRight: 5 }}
-              />
+            <TouchableOpacity onPress={() => setIsArabic(!isArabic)} style={modalStyles.languageToggle}>
+              <Ionicons name="language" size={20} color="#00d4ff" style={{ marginRight: 5 }} />
               <Text style={modalStyles.languageText}>{languageToggleText}</Text>
             </TouchableOpacity>
           </View>
-
           <ScrollView style={modalStyles.termsScrollView}>
-            <Text
-              style={[
-                modalStyles.modalText,
-                { textAlign: isArabic ? "right" : "left" },
-              ]}
-            >
-              {isArabic ? termsArabic.trim() : termsEnglish.trim()}
+            <Text style={[modalStyles.modalText, { textAlign: isArabic ? "right" : "left" }]}>
+              {(isArabic ? policyAr : policyEn).trim()}
             </Text>
           </ScrollView>
-
           <TouchableOpacity style={modalStyles.buttonClose} onPress={onClose}>
             <Text style={modalStyles.textStyle}>إغلاق / Close</Text>
           </TouchableOpacity>
@@ -303,181 +67,178 @@ const TermsModal = ({
     </Modal>
   );
 };
-// ===============================================
 
 // ===============================================
 // مكون ProfileScreen
 // ===============================================
 const ProfileScreen = () => {
   const { username } = useContext(AuthContext);
+  const navigation = useNavigation();
+  const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: getProfile });
+  const avatarSrc = profile?.image ? { uri: /^https?:\/\//.test(profile.image) ? profile.image : `${apiOrigin}/${profile.image.replace(/^\//, "")}` } : require("@/assets/images/placeholer.png");
   const queryClient = useQueryClient();
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [termsModalVisible, setTermsModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
+  // Engagement sorting removed
+  const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const {
-    data: engagements,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<Engagement[]>({
-    queryKey: ["engagements"],
-    queryFn: fetchEngagementByIdApi,
+  // Editable field states
+  const [editUsername, setEditUsername] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editImage, setEditImage] = useState<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    if (profile) {
+      setEditUsername(profile.username || "");
+      setEditEmail(profile.email || "");
+      setEditBio(profile.bio || "");
+      setEditPhone(profile.phone || "");
+    }
+  }, [profile]);
+
+  React.useLayoutEffect(() => {
+    // Update header title based on mode
+    (navigation as any)?.setOptions?.({ title: isEditing ? "Edit Profile" : "Profile" });
+  }, [navigation, isEditing]);
+
+  const { mutateAsync: saveProfile, isPending: saving } = useMutation({
+    mutationFn: (payload: any) => updateUser(payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      setIsEditing(false);
+      setEditImage(undefined);
+    },
   });
 
-  const sortedEvents = useMemo(() => {
-    if (!engagements) return [];
-    return [...engagements].sort((a, b) => {
-      const dateA = new Date(a.event.date).getTime();
-      const dateB = new Date(b.event.date).getTime();
-      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-    });
-  }, [engagements, sortOrder]);
+  // Engagement data and actions removed
 
-  const handleRemoveBookmark = async (engagementId: string) => {
-    await removeEngagementApi(engagementId);
-    queryClient.invalidateQueries({ queryKey: ["engagements"] });
-  };
-
-  const handleProfileRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-    refetch();
-  };
-
-  const user = {
-    email: "user@example.com",
-    image: "https://via.placeholder.com/150/00d4ff/0b0f12?text=User",
-  };
+  const user = { email: profile?.email ?? "" };
 
   const ListHeader = (
     <>
       {/* User Info & Edit Button */}
       <View style={styles.cardHeader}>
-        <View style={styles.row}>
-          <Image source={{ uri: user.image }} style={styles.profileAvatar} />
-          <View style={{ marginLeft: 12 }}>
-            <Text style={styles.name}>{username}</Text>
-            <Text style={styles.email}>{user.email}</Text>
+        {isEditing ? (
+          <View>
+            <View style={[styles.row, { marginBottom: 12 }]}>
+              <TouchableOpacity
+                onPress={async () => {
+                  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+                  if (!res.canceled && res.assets?.[0]?.uri) setEditImage(res.assets[0].uri);
+                }}
+              >
+                <View>
+                  <Image source={{ uri: (editImage || (profile?.image ? (/^https?:\/\//.test(profile.image) ? profile.image : `${apiOrigin}/${profile.image.replace(/^\//, "")}`) : undefined)) as any }} style={{ width: 96, height: 96, borderRadius: 48 }} />
+                  <View style={styles.cameraBadge}><Ionicons name="camera" size={16} color="#0B1416" /></View>
+                </View>
+              </TouchableOpacity>
+            </View>
+            <TextInput value={editUsername} onChangeText={setEditUsername} placeholder="Username" placeholderTextColor={TYPO.muted.color as string} style={styles.input} />
+            <TextInput value={editEmail} onChangeText={setEditEmail} keyboardType="email-address" autoCapitalize="none" placeholder="Email" placeholderTextColor={TYPO.muted.color as string} style={styles.input} />
+            <TextInput value={editBio} onChangeText={setEditBio} placeholder="Bio" placeholderTextColor={TYPO.muted.color as string} style={[styles.input, { minHeight: 80 }]} multiline />
+            <TextInput value={editPhone} onChangeText={setEditPhone} keyboardType="phone-pad" placeholder="Phone" placeholderTextColor={TYPO.muted.color as string} style={styles.input} />
+            <View style={{ flexDirection: "row", columnGap: 10, marginTop: 8 }}>
+              <TouchableOpacity
+                onPress={async () => {
+                  const payload: any = { username: editUsername, email: editEmail, bio: editBio, phone: editPhone };
+                  if (editImage) payload.image = editImage;
+                  await saveProfile(payload);
+                }}
+                disabled={saving}
+                style={[BUTTONS.primary, { alignItems: 'center' }, saving && { opacity: 0.7 }]}
+              >
+                <Text style={BUTTONS.primaryText}>{saving ? "Saving..." : "Save Changes"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setIsEditing(false); setEditImage(undefined); }} style={BUTTONS.secondary}>
+                <Text style={BUTTONS.secondaryText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-
-        {/* 🚀 زر تعديل البروفايل الذي يفتح المودال */}
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => setEditModalVisible(true)}
-        >
-          <Icon name="edit-3" size={16} color="#0b0f12" />
-          <Text style={styles.editButtonText}> edit profile</Text>
-        </TouchableOpacity>
+        ) : (
+          <View>
+            <View style={styles.row}>
+              <View>
+                <Image source={avatarSrc as any} style={{ width: 96, height: 96, borderRadius: 48 }} />
+                <TouchableOpacity
+                  onPress={() => router.push("/user/editProfile" as any)}
+                  style={styles.cameraBadge}
+                >
+                  <Ionicons name="camera" size={16} color="#0B1416" />
+                </TouchableOpacity>
+              </View>
+              <View style={{ marginLeft: 12, justifyContent: 'center', flex: 1 }}>
+                <Text style={[TYPO.h2]}>{profile?.username ?? username}</Text>
+                {!!user.email && <Text style={[TYPO.muted]}>{user.email}</Text>}
+                {!!(profile?.bio && profile.bio.trim()) && (
+                  <Text style={[TYPO.muted, { marginTop: 6 }]}>{profile.bio}</Text>
+                )}
+                {!!(profile?.phone && profile.phone.trim()) && (
+                  <Text style={[TYPO.muted, { marginTop: 2 }]}>Phone: {profile.phone}</Text>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={{ height: 12 }} />
 
-      {/* Engagement Header */}
-      <View style={styles.engagementWrapper}>
-        <View style={styles.engagementHeader}>
-          <Text style={styles.sectionTitle}>Engagement</Text>
-          <TouchableOpacity
-            onPress={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            style={styles.sortBtn}
-          >
-            <Icon
-              name={sortOrder === "asc" ? "arrow-up" : "arrow-down"}
-              size={16}
-              color="#00d4ff"
-            />
-            <Text style={styles.sortText}>
-              {sortOrder === "asc" ? "الأقرب أولاً" : "الأبعد أولاً"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {isLoading && <Text style={{ color: "#fff" }}>Loading...</Text>}
-        {error && (
-          <Text style={{ color: "red" }}>Error loading engagements</Text>
-        )}
-      </View>
+      {/* Engagement section removed */}
     </>
   );
 
   const ListFooter = (
     <>
-      <TouchableOpacity
-        style={styles.settingsItem}
-        onPress={() => setTermsModalVisible(true)}
-      >
-        <View style={styles.itemLeft}>
-          <View style={styles.iconWrap}>
-            <Ionicons name="document-text-outline" size={20} color="#00d4ff" />
-          </View>
-          <Text style={styles.itemText}>الشروط والأحكام</Text>
-        </View>
-        <Icon name="chevron-right" size={20} color="#9ca3af" />
+      {/* Edit button placed directly above Sign Out */}
+      <TouchableOpacity onPress={() => router.push("/user/editProfile" as any)} style={[BUTTONS.primary, { marginTop: 8 }]}>
+        <Text style={BUTTONS.primaryText}>Edit Profile</Text>
       </TouchableOpacity>
 
-      <LogoutButton />
+      {/* Delete account replaces Sign Out here */}
+      <TouchableOpacity
+        onPress={() => {
+          Alert.alert(
+            "Delete Account",
+            "This action cannot be undone. Are you sure you want to delete your account?",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await deleteAccount();
+                    (require("expo-router").router.replace("/" as any));
+                  } catch (e) {
+                    console.warn("Delete account failed", e);
+                  }
+                },
+              },
+            ]
+          );
+        }}
+        style={{
+          marginTop: 12,
+          backgroundColor: '#2a1e1e',
+          padding: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+          borderWidth: 1.5,
+          borderColor: '#ff4d4f',
+        }}
+      >
+        <Text style={{ color: '#ff4d4f', fontWeight: '800' }}>Delete Account</Text>
+      </TouchableOpacity>
     </>
   );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={sortedEvents}
-        keyExtractor={(item) => item._id}
-        ListHeaderComponent={ListHeader}
-        ListFooterComponent={ListFooter}
-        contentContainerStyle={{ padding: 16 }}
-        style={{ flex: 1 }}
-        renderItem={({ item }) => {
-          const { title, description, image, location, date, time } =
-            item.event;
-
-          return (
-            <View style={styles.eventCard}>
-              <Image source={{ uri: image }} style={styles.eventImage} />
-              <TouchableOpacity
-                style={styles.bookmarkIcon}
-                onPress={() => handleRemoveBookmark(item._id)}
-              >
-                <Icon name="bookmark" size={24} color="#00d4ff" />
-              </TouchableOpacity>
-              <View style={styles.eventContent}>
-                <Text style={styles.eventTitle}>{title}</Text>
-                <Text style={styles.eventDesc}>{description}</Text>
-                {location &&
-                  typeof location !== "string" &&
-                  location.coordinates && (
-                    <Text style={styles.eventLocationText}>
-                      Location: Lat {location.coordinates[1]}, Lng{" "}
-                      {location.coordinates[0]}
-                    </Text>
-                  )}
-
-                {location && typeof location === "string" && (
-                  <Text style={styles.eventLocationText}>
-                    Location: {location}
-                  </Text>
-                )}
-                <Text style={styles.eventDateText}>
-                  {new Date(date).toLocaleDateString()} at {time}
-                </Text>
-              </View>
-            </View>
-          );
-        }}
-      />
-
-      <TermsModal
-        visible={termsModalVisible}
-        onClose={() => setTermsModalVisible(false)}
-      />
-
-      <EditProfileModalContent
-        visible={editModalVisible}
-        onClose={() => setEditModalVisible(false)}
-        onUpdateSuccess={handleProfileRefresh}
-      />
-    </View>
+    <ScrollView style={[LAYOUT.screen, { padding: 0 }] } contentContainerStyle={{ padding: 16 }}>
+      {ListHeader}
+      {ListFooter}
+      <PrivacyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
+    </ScrollView>
   );
 };
 
@@ -663,54 +424,42 @@ const styles = StyleSheet.create({
 
   name: { color: "#fff", fontWeight: "700", fontSize: 16 },
   email: { color: "#9ca3af", marginTop: 4 },
-  engagementWrapper: {
-    marginVertical: 16,
-    backgroundColor: "#0f1720",
-    borderRadius: 12,
-    padding: 12,
-  },
-  engagementHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  sortBtn: { flexDirection: "row", alignItems: "center" },
-  sortText: { color: "#00d4ff", marginLeft: 6 },
-  eventCard: {
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: "hidden",
-    backgroundColor: "#16232e",
-  },
-  eventImage: { width: "100%", height: 150 },
-  eventTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  eventDesc: {
+  input: {
     color: "#e6eef0",
-    marginTop: 4,
+    borderColor: "#213336",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: "#0f1720",
   },
-  eventLocationText: {
-    color: "#9ca3af",
-    marginTop: 4,
+  cameraBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#00d4ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#0B1416',
   },
-  eventDateText: {
-    color: "#9ca3af",
-    marginTop: 4,
-    fontSize: 13,
+  primaryBtn: {
+    backgroundColor: '#00d4ff',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
-  eventContent: {
-    padding: 12,
+  primaryBtnText: { color: '#0B1416', fontWeight: '900' },
+  secondaryBtn: {
+    backgroundColor: '#213336',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
   },
-  bookmarkIcon: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    zIndex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 20,
-    padding: 4,
-  },
+  secondaryBtnText: { color: '#e6eef0', fontWeight: '600' },
   settingsItem: {
     backgroundColor: "#0f1720",
     marginTop: 12,
