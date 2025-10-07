@@ -111,7 +111,7 @@ function PlaceAutocomplete({
     { description: string; place_id: string }[]
   >([]);
   const [error, setError] = useState<string | null>(null);
-
+  const GOOGLE_API_KEY = "AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ";
   useEffect(() => {
     let active = true;
     (async () => {
@@ -125,7 +125,7 @@ function PlaceAutocomplete({
         const url =
           "https://maps.googleapis.com/maps/api/place/autocomplete/json" +
           `?input=${encodeURIComponent(debounced)}` +
-          `&key=${process.env.GOOGLE_PLACES_KEY}` +
+          `&key=${GOOGLE_API_KEY}` +
           `&components=country:kw`;
         const res = await fetch(url);
         const json = await res.json();
@@ -161,7 +161,7 @@ function PlaceAutocomplete({
       const url =
         "https://maps.googleapis.com/maps/api/place/details/json" +
         `?place_id=${encodeURIComponent(place_id)}` +
-        `&key=${process.env.GOOGLE_PLACES_KEY}` +
+        `&key=${GOOGLE_API_KEY}` +
         `&fields=geometry/location,name,formatted_address,place_id`;
       const res = await fetch(url);
       const json = await res.json();
@@ -385,6 +385,7 @@ export default function CreateNewEventScreen() {
         );
         return;
       }
+
       const scheduledAt = combineDateAndTime(date, time);
       const now = new Date();
       if (scheduledAt <= now) {
@@ -394,6 +395,7 @@ export default function CreateNewEventScreen() {
         );
         return;
       }
+
       const coords = parseLngLat(locationText);
       if (!coords) {
         Alert.alert(
@@ -402,24 +404,36 @@ export default function CreateNewEventScreen() {
         );
         return;
       }
+
       if (!imageUri) {
         Alert.alert("Image required", "Please add an event image.");
         return;
       }
-      await createEventApi({
-        title,
-        description,
-        image: imageUri,
-        location: coords,
-        date: date.toISOString(),
-        time: formatTime(time),
-        duration,
-        categoryId,
-        // @ts-ignore optional extras supported server-side
-        placeName: placeName || undefined,
-        // @ts-ignore
-        address: address || undefined,
-      });
+
+      // 🔽 Create FormData for multer backend
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("date", date.toISOString());
+      formData.append("time", formatTime(time));
+      formData.append("duration", duration);
+      if (categoryId) formData.append("categoryId", categoryId);
+      formData.append("location", JSON.stringify(coords));
+
+      // optional fields
+      if (placeName) formData.append("placeName", placeName);
+      if (address) formData.append("address", address);
+
+      // append the actual image file for multer
+      formData.append("image", {
+        uri: imageUri,
+        name: `event_${Date.now()}.jpg`,
+        type: "image/jpeg",
+      } as any);
+
+      // 🔽 send FormData instead of JSON
+      await createEventApi(formData);
+
       Alert.alert("Success", "Event created.");
       setTitle("");
       setDescription("");

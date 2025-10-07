@@ -6,7 +6,7 @@ import AuthContext from "@/context/authcontext";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -48,15 +48,21 @@ type EventDoc = {
 
 const OrganizerHomeScreen = () => {
   const { setIsAuthenticated, setIsOrganizer } = useContext(AuthContext);
+
   const [events, setEvents] = useState<EventDoc[]>([]);
   const [orgImage, setOrgImage] = useState<string | undefined>(undefined);
+
+  // 👇 separate initial loading vs background refresh
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [selectedEvent, setSelectedEvent] = useState<EventDoc | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newImage, setNewImage] = useState<string | null>(null);
+
+  const mountedRef = useRef(true);
 
   const handleLogout = async () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -74,29 +80,45 @@ const OrganizerHomeScreen = () => {
     ]);
   };
 
-  const loadData = async () => {
+  // Load data — `opts.initial` controls which spinner to use
+  const loadData = async (opts: { initial?: boolean } = {}) => {
+    const isInitial = !!opts.initial;
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
+      else setRefreshing(true);
+
       const [eventsData, org] = await Promise.allSettled([
         fetchEventsApi(),
         getOrgProfile(),
       ]);
+
+      if (!mountedRef.current) return;
+
       if (eventsData.status === "fulfilled") setEvents(eventsData.value);
       if (org.status === "fulfilled") setOrgImage(org.value?.image);
     } catch (err) {
       console.log("Load error:", err);
     } finally {
-      setLoading(false);
+      if (!mountedRef.current) return;
+      if (opts.initial) setLoading(false);
+      else setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    mountedRef.current = true;
+    // First load shows full-screen spinner
+    loadData({ initial: true });
+
+    // Background refresh every 15s (less flicker + lighter)
     const interval = setInterval(() => {
-      // refresh periodically (optional)
-      loadData();
-    }, 5000);
-    return () => clearInterval(interval);
+      loadData({ initial: false }); // silent refresh
+    }, 15000);
+
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const openEdit = (event: EventDoc) => {
@@ -137,7 +159,8 @@ const OrganizerHomeScreen = () => {
       });
       Alert.alert("Updated", "Event updated successfully!");
       setEditModalVisible(false);
-      loadData();
+      // Soft refresh after update
+      loadData({ initial: false });
     } catch (err) {
       Alert.alert("Error", "Failed to update event.");
     }
@@ -153,7 +176,8 @@ const OrganizerHomeScreen = () => {
           try {
             await deleteEventApi(eventId);
             Alert.alert("Deleted", "Event has been deleted.");
-            loadData();
+            // Soft refresh after delete
+            loadData({ initial: false });
           } catch {
             Alert.alert("Error", "Failed to delete event.");
           }
@@ -172,6 +196,7 @@ const OrganizerHomeScreen = () => {
   };
 
   if (loading) {
+    // Only on the very first load
     return (
       <View
         style={{
@@ -200,15 +225,22 @@ const OrganizerHomeScreen = () => {
           {/* ===== Top Header ===== */}
           <View style={styles.topHeader}>
             <Text style={styles.appTitle}>EventHub Kuwait</Text>
+
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
+              {/* Small spinner for background refresh */}
+              {refreshing && (
+                <ActivityIndicator size="small" color={colors.primary} />
+              )}
+
               <TouchableOpacity
                 style={styles.circleBtn}
                 onPress={() => router.push("/createEvent")}
               >
                 <Ionicons name="add" size={18} color={colors.text} />
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.circleBtn}
                 onPress={() =>
@@ -221,6 +253,7 @@ const OrganizerHomeScreen = () => {
                   color={colors.text}
                 />
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => router.push("/organizer/profile")}
               >
@@ -236,34 +269,41 @@ const OrganizerHomeScreen = () => {
           </View>
 
           <Text style={styles.sectionTitle}>My Events</Text>
-          {events.map((ev) => (
-            <View key={ev._id} style={styles.eventCard}>
-              <Image source={{ uri: ev.image }} style={styles.thumb} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventTitle}>{ev.title}</Text>
-                <Text style={styles.eventDesc}>
-                  {ev.description || ev.desc}
-                </Text>
-                <Text style={styles.dateText}>{formatDateNice(ev.date)}</Text>
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={styles.editBtn}
-                    onPress={() => openEdit(ev)}
-                  >
-                    <Ionicons name="create-outline" size={16} color="#fff" />
-                    <Text style={styles.actionText}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => handleDelete(ev._id)}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#fff" />
-                    <Text style={styles.actionText}>Delete</Text>
-                  </TouchableOpacity>
+
+          {events.length === 0 ? (
+            <Text style={{ color: colors.muted, paddingHorizontal: 4 }}>
+              No events yet.
+            </Text>
+          ) : (
+            events.map((ev) => (
+              <View key={ev._id} style={styles.eventCard}>
+                <Image source={{ uri: ev.image }} style={styles.thumb} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.eventTitle}>{ev.title}</Text>
+                  <Text style={styles.eventDesc}>
+                    {ev.description || ev.desc}
+                  </Text>
+                  <Text style={styles.dateText}>{formatDateNice(ev.date)}</Text>
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={styles.editBtn}
+                      onPress={() => openEdit(ev)}
+                    >
+                      <Ionicons name="create-outline" size={16} color="#fff" />
+                      <Text style={styles.actionText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => handleDelete(ev._id)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#fff" />
+                      <Text style={styles.actionText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </ScrollView>
       </View>
 
@@ -399,6 +439,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
