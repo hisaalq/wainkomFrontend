@@ -6,7 +6,7 @@ import { getToken } from "./storage";
 export const apiBaseUrl =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
-  "http://localhost:8000/api";
+  "http://172.20.10.9:8000/api";
 
 // Useful for building absolute asset URLs when backend returns relative paths
 export const apiOrigin = apiBaseUrl.replace(/\/?api\/?$/i, "");
