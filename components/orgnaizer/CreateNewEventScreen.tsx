@@ -1,7 +1,7 @@
-
-import { BOTTOM_BAR, BUTTONS, FORMS, HEADER, UPLOAD } from "@/assets/style/stylesheet";
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { createEventApi } from "@/api/events";
+import { COLORS } from "@/assets/style/color";
+import { CreateEventStyles } from "@/assets/style/stylesheet";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker, {
   DateTimePickerEvent,
@@ -19,32 +19,17 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
-  
-  View,
+  TouchableOpacity,
+  View
 } from "react-native";
-import { TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 
 // Google Places key from env or app.json
 const GOOGLE_PLACES_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 
-
-
-const colors = {
-  bg: "#0F1115",
-  surface: "#151922",
-  surfaceAlt: "#10151C",
-  border: "#1E2430",
-  primary: "#2EA6A6",
-  text: "#E8EAED",
-  muted: "#A6AFBD",
-  heading: "#F4F7FA",
-};
 
 type PickerMode = "none" | "date" | "time";
 
@@ -211,30 +196,13 @@ function PlaceAutocomplete({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose} />
-      <View style={[styles.modalCard, { width: "90%", maxWidth: 420 }]}>
-        <Text style={styles.modalTitle}>Search a place (Kuwait)</Text>
-
-        <View style={[styles.inputWrap, { marginTop: 8 }]}>
-          <Ionicons name="search" size={18} color={colors.muted} />
-          <TextInput
-            autoFocus
-            value={query}
-            onChangeText={setQuery}
-            placeholder="e.g. The Avenues, Salmiya, Messila Beach…"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery("")}>
-              <Ionicons name="close" size={18} color={colors.muted} />
-            </TouchableOpacity>
-          )}
-        </View>
+      <Pressable style={CreateEventStyles.overlay} onPress={onClose} />
+      <View style={[CreateEventStyles.modalCard, { width: "90%", maxWidth: 420 }]}>
+        <Text style={CreateEventStyles.modalTitle}>Search a place (Kuwait)</Text>
 
         {loading ? (
           <View style={{ paddingVertical: 16 }}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={COLORS.primary} />
           </View>
         ) : error ? (
           <Text style={{ color: "tomato", marginTop: 10 }}>{error}</Text>
@@ -245,21 +213,21 @@ function PlaceAutocomplete({
             style={{ maxHeight: 280, marginTop: 8 }}
             keyboardShouldPersistTaps="handled"
             ItemSeparatorComponent={() => (
-              <View style={{ height: 1, backgroundColor: colors.border }} />
+              <View style={{ height: 1, backgroundColor: COLORS.border }} />
             )}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={{ paddingVertical: 12 }}
                 onPress={() => pickByPlaceId(item.place_id)}
               >
-                <Text style={{ color: colors.text, fontWeight: "700" }}>
+                <Text style={{ color: COLORS.text, fontWeight: "700" }}>
                   {item.description}
                 </Text>
               </TouchableOpacity>
             )}
             ListEmptyComponent={
               debounced ? (
-                <Text style={{ color: colors.muted, marginTop: 10 }}>
+                <Text style={{ color: COLORS.muted, marginTop: 10 }}>
                   No results
                 </Text>
               ) : null
@@ -267,9 +235,9 @@ function PlaceAutocomplete({
           />
         )}
 
-        <View style={styles.modalActions}>
-          <TouchableOpacity onPress={onClose} style={styles.btnGhost}>
-            <Text style={styles.btnGhostText}>Close</Text>
+        <View style={CreateEventStyles.modalActions}>
+          <TouchableOpacity onPress={onClose} style={CreateEventStyles.btnGhost}>
+            <Text style={CreateEventStyles.btnGhostText}>Close</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -444,7 +412,7 @@ export default function CreateNewEventScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+    <SafeAreaView style={CreateEventStyles.safe} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -456,97 +424,97 @@ export default function CreateNewEventScreen() {
           contentInsetAdjustmentBehavior="always"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.topSpace}>
-            <Text style={styles.headerTitle}>Create Event</Text>
-            <Text style={styles.headerSub}>
+          <View style={CreateEventStyles.topSpace}>
+            <Text style={CreateEventStyles.headerTitle}>Create Event</Text>
+            <Text style={CreateEventStyles.headerSub}>
               Share your event with community
             </Text>
           </View>
 
           {imageUri ? (
             <View
-              style={[styles.uploadBox, { padding: 0, overflow: "hidden" }]}
+              style={[CreateEventStyles.uploadBox, { padding: 0, overflow: "hidden" }]}
             >
-              <Image source={{ uri: imageUri }} style={styles.previewImg} />
-              <View style={styles.previewActions}>
-                <TouchableOpacity style={styles.previewBtn} onPress={pickImage}>
-                  <Ionicons name="images" size={16} color={colors.text} />
-                  <Text style={styles.previewBtnText}>Change</Text>
+              <Image source={{ uri: imageUri }} style={CreateEventStyles.previewImg} />
+              <View style={CreateEventStyles.previewActions}>
+                <TouchableOpacity style={CreateEventStyles.previewBtn} onPress={pickImage}>
+                  <Ionicons name="images" size={16} color={COLORS.text} />
+                  <Text style={CreateEventStyles.previewBtnText}>Change</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.previewBtn}
+                  style={CreateEventStyles.previewBtn}
                   onPress={removeImage}
                 >
                   <Ionicons
                     name="trash-outline"
                     size={16}
-                    color={colors.text}
+                    color={COLORS.text}
                   />
-                  <Text style={styles.previewBtnText}>Remove</Text>
+                  <Text style={CreateEventStyles.previewBtnText}>Remove</Text>
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.uploadBox}
+              style={CreateEventStyles.uploadBox}
               activeOpacity={0.85}
               onPress={pickImage}
             >
               <MaterialCommunityIcons
                 name="image-outline"
                 size={30}
-                color={colors.muted}
+                color={COLORS.muted}
               />
-              <Text style={styles.uploadText}>Tap to add event photo</Text>
-              <Text style={styles.uploadHint}>No size limit</Text>
+              <Text style={CreateEventStyles.uploadText}>Tap to add event photo</Text>
+              <Text style={CreateEventStyles.uploadHint}>No size limit</Text>
             </TouchableOpacity>
           )}
 
-          <View style={styles.form}>
+          <View style={CreateEventStyles.form}>
             <Label text="Event Title" />
-            <View style={styles.inputWrap}>
+            <View style={CreateEventStyles.inputWrap}>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Enter event title..."
-                placeholderTextColor={colors.muted}
-                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+                style={CreateEventStyles.input}
               />
             </View>
 
 
             <Label text="Category (optional id)" />
-            <View style={styles.inputWrap}>
+            <View style={CreateEventStyles.inputWrap}>
               <TextInput
                 value={categoryId}
                 onChangeText={setCategoryId}
                 placeholder="Enter categoryId (optional)"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+                style={CreateEventStyles.input}
 
               />
-              <TouchableOpacity style={[styles.inputWrap, { height: 50 }]} onPress={() => setCatModal(true)}>
+              <TouchableOpacity style={[CreateEventStyles.inputWrap, { height: 50 }]} onPress={() => setCatModal(true)}>
 
-              <Text style={[styles.input, { paddingVertical: 12 }]}> 
+              <Text style={[CreateEventStyles.input, { paddingVertical: 12 }]}> 
                 {categories.find((c) => c._id === categoryId)?.name ??
                   "Select a category"}
               </Text>
-              <Ionicons name="chevron-down" size={18} color={colors.muted} />
+              <Ionicons name="chevron-down" size={18} color={COLORS.muted} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.row}>
+            <View style={CreateEventStyles.row}>
               <View style={{ flex: 1 }}>
                 <Label text="Date" />
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={openDate}
-                  style={styles.inputWrap}
+                  style={CreateEventStyles.inputWrap}
                 >
                   <Text
                     style={[
-                      styles.inputText,
-                      { color: date ? colors.text : colors.muted },
+                      CreateEventStyles.inputText,
+                      { color: date ? COLORS.text : COLORS.muted },
                     ]}
                   >
                     {date ? formatDate(date) : "dd/mm/yyyy"}
@@ -554,7 +522,7 @@ export default function CreateNewEventScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={18}
-                    color={colors.muted}
+                    color={COLORS.muted}
                   />
                 </TouchableOpacity>
               </View>
@@ -564,12 +532,12 @@ export default function CreateNewEventScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={openTime}
-                  style={styles.inputWrap}
+                  style={CreateEventStyles.inputWrap}
                 >
                   <Text
                     style={[
-                      styles.inputText,
-                      { color: time ? colors.text : colors.muted },
+                      CreateEventStyles.inputText,
+                      { color: time ? COLORS.text : COLORS.muted },
                     ]}
                   >
                     {time ? formatTime(time) : "--:-- --"}
@@ -577,7 +545,7 @@ export default function CreateNewEventScreen() {
                   <Ionicons
                     name="time-outline"
                     size={18}
-                    color={colors.muted}
+                    color={COLORS.muted}
                   />
                 </TouchableOpacity>
               </View>
@@ -585,84 +553,77 @@ export default function CreateNewEventScreen() {
 
             <Label text="Location" />
             <TouchableOpacity
-              style={styles.inputWrap}
+              style={CreateEventStyles.inputWrap}
               onPress={() => setLocModal(true)}
               activeOpacity={0.85}
             >
               <Ionicons
                 name="location-outline"
                 size={18}
-                color={colors.muted}
+                color={COLORS.muted}
               />
-              <Text style={[styles.input, { paddingVertical: 12 }]}>
+              <Text style={[CreateEventStyles.input, { paddingVertical: 12 }]}>
                 {placeName ||
                   address ||
                   (locationText ? locationText : "Search a place in Kuwait")}
               </Text>
-              <Ionicons name="search" size={18} color={colors.muted} />
+                <Ionicons name="search" size={18} color={COLORS.muted} />
             </TouchableOpacity>
 
             <Label text="Place name (optional)" />
-            <View style={styles.inputWrap}>
-              <Ionicons
-                name="business-outline"
-                size={18}
-                color={colors.muted}
-              />
+            <View style={CreateEventStyles.inputWrap}>
+              <Ionicons name="business-outline" size={18} color={COLORS.muted} />
               <TextInput
-                value={placeName}
-                onChangeText={setPlaceName}
+                value={placeName} 
+                onChangeText={setPlaceName} 
                 placeholder="e.g. The Avenues Mall"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+                style={CreateEventStyles.input}
               />
             </View>
 
             <Label text="Address (optional)" />
-            <View style={styles.inputWrap}>
-              <Ionicons name="map-outline" size={18} color={colors.muted} />
+            <View style={CreateEventStyles.inputWrap}>
+              <Ionicons name="map-outline" size={18} color={COLORS.muted} />
               <TextInput
-                value={address}
-                onChangeText={setAddress}
+                value={address} 
+                onChangeText={setAddress} 
                 placeholder="e.g. Al Rai, Kuwait"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+                style={CreateEventStyles.input}
               />
             </View>
 
             <Label text="Duration" />
-            <View style={styles.inputWrap}>
-              <Ionicons name="timer-outline" size={18} color={colors.muted} />
+            <View style={CreateEventStyles.inputWrap}>
+              <Ionicons name="timer-outline" size={18} color={COLORS.muted} />
               <TextInput
-                value={duration}
-                onChangeText={setDuration}
+                value={duration} 
+                onChangeText={setDuration} 
                 placeholder="e.g. 2h"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
+                placeholderTextColor={COLORS.muted}
+                style={CreateEventStyles.input}
               />
             </View>
 
             <Label text="Description" />
             <TextInput
               value={description}
-              onChangeText={setDescription}
+              onChangeText={setDescription} 
               placeholder="Describe your event..."
-              placeholderTextColor={colors.muted}
-              style={[
-                styles.inputWrap,
-                { height: 110, textAlignVertical: "top" },
-              ]}
+              placeholderTextColor={COLORS.muted}
+              style={[CreateEventStyles.inputWrap, { height: 110, textAlignVertical: "top" }]}
               multiline
             />
           </View>
 
           <TouchableOpacity
-            style={styles.publishBtn}
+            style={CreateEventStyles.publishBtn}
             activeOpacity={0.9}
             onPress={onPublish}
           >
             <Ionicons name="checkmark" size={18} color="#fff" />
-            <Text style={styles.publishText}>Publish Event</Text>
+            <Text style={CreateEventStyles.publishText}>Publish Event</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -674,9 +635,9 @@ export default function CreateNewEventScreen() {
         animationType="fade"
         onRequestClose={() => setCatModal(false)}
       >
-        <Pressable style={styles.overlay} onPress={() => setCatModal(false)} />
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Choose Category</Text>
+        <Pressable style={CreateEventStyles.overlay} onPress={() => setCatModal(false)} />
+        <View style={CreateEventStyles.modalCard}>
+          <Text style={CreateEventStyles.modalTitle}>Choose Category</Text>
           <ScrollView style={{ maxHeight: 280 }}>
             {categories.map((c) => (
               <TouchableOpacity
@@ -684,7 +645,7 @@ export default function CreateNewEventScreen() {
                 style={{
                   paddingVertical: 12,
                   borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
+                  borderBottomColor: COLORS.border,
                 }}
                 onPress={() => {
                   setCategoryId(c._id);
@@ -693,7 +654,7 @@ export default function CreateNewEventScreen() {
               >
                 <Text
                   style={{
-                    color: colors.text,
+                    color: COLORS.text,
                     fontWeight: c._id === categoryId ? "800" : "600",
                   }}
                 >
@@ -702,12 +663,12 @@ export default function CreateNewEventScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
-          <View style={styles.modalActions}>
+          <View style={CreateEventStyles.modalActions}>
             <TouchableOpacity
               onPress={() => setCatModal(false)}
-              style={styles.btnPrimary}
+              style={CreateEventStyles.btnPrimary}
             >
-              <Text style={styles.btnPrimaryText}>Done</Text>
+              <Text style={CreateEventStyles.btnPrimaryText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -731,9 +692,9 @@ export default function CreateNewEventScreen() {
         animationType="fade"
         onRequestClose={cancelPicker}
       >
-        <Pressable style={styles.overlay} onPress={cancelPicker} />
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>
+        <Pressable style={CreateEventStyles.overlay} onPress={cancelPicker} />
+        <View style={CreateEventStyles.modalCard}>
+          <Text style={CreateEventStyles.modalTitle}>
             {pickerMode === "date" ? "Select Date" : "Select Time"}
           </Text>
           <DateTimePicker
@@ -755,12 +716,12 @@ export default function CreateNewEventScreen() {
             }
             style={{ alignSelf: "stretch" }}
           />
-          <View style={styles.modalActions}>
-            <TouchableOpacity onPress={cancelPicker} style={styles.btnGhost}>
-              <Text style={styles.btnGhostText}>Cancel</Text>
+          <View style={CreateEventStyles.modalActions}>
+            <TouchableOpacity onPress={cancelPicker} style={CreateEventStyles.btnGhost}>
+              <Text style={CreateEventStyles.btnGhostText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={confirmPicker} style={styles.btnPrimary}>
-              <Text style={styles.btnPrimaryText}>Confirm</Text>
+            <TouchableOpacity onPress={confirmPicker} style={CreateEventStyles.btnPrimary}>
+              <Text style={CreateEventStyles.btnPrimaryText}>Confirm</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -770,122 +731,6 @@ export default function CreateNewEventScreen() {
 }
 
 const Label = ({ text }: { text: string }) => (
-  <Text style={styles.label}>{text}</Text>
+  <Text style={CreateEventStyles.label}>{text}</Text>
 );
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  topSpace: { paddingTop: 6, paddingHorizontal: 16, paddingBottom: 8 },
-  headerTitle: { color: colors.heading, fontSize: 18, fontWeight: "800" },
-  headerSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
-
-  uploadBox: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: 22,
-    paddingHorizontal: 14,
-    alignItems: "center",
-    backgroundColor: colors.surfaceAlt,
-  },
-  uploadText: { color: colors.muted, marginTop: 8 },
-  uploadHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  previewImg: { width: "100%", height: 180, resizeMode: "cover" },
-  previewActions: {
-    position: "absolute",
-    right: 10,
-    bottom: 10,
-    flexDirection: "row",
-    gap: 8,
-  },
-  previewBtn: {
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#000",
-  },
-  previewBtnText: { color: colors.text, fontWeight: "700", fontSize: 12 },
-
-  form: { paddingHorizontal: 16 },
-  label: {
-    color: colors.text,
-    fontWeight: "800",
-    marginBottom: 6,
-    marginTop: 12,
-  },
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    height: 50,
-  },
-  input: { flex: 1, color: colors.text, fontSize: 14 },
-  inputText: { flex: 1, fontSize: 14 },
-
-  row: { flexDirection: "row", marginTop: 2 },
-
-  publishBtn: {
-    marginHorizontal: 16,
-    marginTop: 22,
-    marginBottom: 16,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
-  publishText: { color: "#fff", fontWeight: "900", fontSize: 15 },
-
-  // Modals
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-  modalCard: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -160 }, { translateY: -180 }],
-    width: 320,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    padding: 14,
-  },
-  modalTitle: {
-    color: colors.heading,
-    fontWeight: "800",
-    fontSize: 16,
-    marginBottom: 6,
-  },
-  modalActions: {
-    marginTop: 8,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-  },
-  btnGhost: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  btnGhostText: { color: colors.muted, fontWeight: "700" },
-  btnPrimary: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-  },
-  btnPrimaryText: { color: "#0B1416", fontWeight: "900" },
-});
