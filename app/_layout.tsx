@@ -66,7 +66,7 @@ export default function RootLayout() {
         options={{
           title: "Profile",   // Text in the header
           headerShown: true,
-          headerStyle: { backgroundColor: COLORS.backgroundn },
+          headerStyle: { backgroundColor: COLORS.backgroundd },
           headerTintColor: COLORS.primary,
         }}
       />
