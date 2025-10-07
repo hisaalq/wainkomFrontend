@@ -27,7 +27,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Google Places key from env or app.json
-const GOOGLE_PLACES_KEY =
+const GOOGLE_PLACES_KEY ="AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ"
   process.env.EXPO_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 
 
