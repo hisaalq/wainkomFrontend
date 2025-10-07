@@ -1,6 +1,5 @@
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { createEventApi } from "@/api/events";
-import { COLORS } from "@/assets/style/color";
 import { CreateEventStyles } from "@/assets/style/stylesheet";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker, {
@@ -22,14 +21,20 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Google Places key from env or app.json
-const GOOGLE_PLACES_KEY ="AIzaSyB28bhMHQNpkACphjzpn3UzzCebH-uqhhQ"
-  process.env.EXPO_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
-
+const colors = {
+  bg: "#0F1115",
+  surface: "#151922",
+  surfaceAlt: "#10151C",
+  border: "#1E2430",
+  primary: "#2EA6A6",
+  text: "#E8EAED",
+  muted: "#A6AFBD",
+  heading: "#F4F7FA",
+};
 
 type PickerMode = "none" | "date" | "time";
 
@@ -197,12 +202,33 @@ function PlaceAutocomplete({
       onRequestClose={onClose}
     >
       <Pressable style={CreateEventStyles.overlay} onPress={onClose} />
-      <View style={[CreateEventStyles.modalCard, { width: "90%", maxWidth: 420 }]}>
-        <Text style={CreateEventStyles.modalTitle}>Search a place (Kuwait)</Text>
+      <View
+        style={[CreateEventStyles.modalCard, { width: "90%", maxWidth: 420 }]}
+      >
+        <Text style={CreateEventStyles.modalTitle}>
+          Search a place (Kuwait)
+        </Text>
+
+        <View style={[CreateEventStyles.inputWrap, { marginTop: 8 }]}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <TextInput
+            autoFocus
+            value={query}
+            onChangeText={setQuery}
+            placeholder="e.g. The Avenues, Salmiya, Messila Beach…"
+            placeholderTextColor={colors.muted}
+            style={CreateEventStyles.input}
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery("")}>
+              <Ionicons name="close" size={18} color={colors.muted} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {loading ? (
           <View style={{ paddingVertical: 16 }}>
-            <ActivityIndicator color={COLORS.primary} />
+            <ActivityIndicator color={colors.primary} />
           </View>
         ) : error ? (
           <Text style={{ color: "tomato", marginTop: 10 }}>{error}</Text>
@@ -213,21 +239,21 @@ function PlaceAutocomplete({
             style={{ maxHeight: 280, marginTop: 8 }}
             keyboardShouldPersistTaps="handled"
             ItemSeparatorComponent={() => (
-              <View style={{ height: 1, backgroundColor: COLORS.border }} />
+              <View style={{ height: 1, backgroundColor: colors.border }} />
             )}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={{ paddingVertical: 12 }}
                 onPress={() => pickByPlaceId(item.place_id)}
               >
-                <Text style={{ color: COLORS.text, fontWeight: "700" }}>
+                <Text style={{ color: colors.text, fontWeight: "700" }}>
                   {item.description}
                 </Text>
               </TouchableOpacity>
             )}
             ListEmptyComponent={
               debounced ? (
-                <Text style={{ color: COLORS.muted, marginTop: 10 }}>
+                <Text style={{ color: colors.muted, marginTop: 10 }}>
                   No results
                 </Text>
               ) : null
@@ -236,7 +262,10 @@ function PlaceAutocomplete({
         )}
 
         <View style={CreateEventStyles.modalActions}>
-          <TouchableOpacity onPress={onClose} style={CreateEventStyles.btnGhost}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={CreateEventStyles.btnGhost}
+          >
             <Text style={CreateEventStyles.btnGhostText}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -412,7 +441,10 @@ export default function CreateNewEventScreen() {
   };
 
   return (
-    <SafeAreaView style={CreateEventStyles.safe} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={CreateEventStyles.safe}
+      edges={["top", "left", "right"]}
+    >
       <StatusBar barStyle="light-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -433,12 +465,21 @@ export default function CreateNewEventScreen() {
 
           {imageUri ? (
             <View
-              style={[CreateEventStyles.uploadBox, { padding: 0, overflow: "hidden" }]}
+              style={[
+                CreateEventStyles.uploadBox,
+                { padding: 0, overflow: "hidden" },
+              ]}
             >
-              <Image source={{ uri: imageUri }} style={CreateEventStyles.previewImg} />
+              <Image
+                source={{ uri: imageUri }}
+                style={CreateEventStyles.previewImg}
+              />
               <View style={CreateEventStyles.previewActions}>
-                <TouchableOpacity style={CreateEventStyles.previewBtn} onPress={pickImage}>
-                  <Ionicons name="images" size={16} color={COLORS.text} />
+                <TouchableOpacity
+                  style={CreateEventStyles.previewBtn}
+                  onPress={pickImage}
+                >
+                  <Ionicons name="images" size={16} color={colors.text} />
                   <Text style={CreateEventStyles.previewBtnText}>Change</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -448,7 +489,7 @@ export default function CreateNewEventScreen() {
                   <Ionicons
                     name="trash-outline"
                     size={16}
-                    color={COLORS.text}
+                    color={colors.text}
                   />
                   <Text style={CreateEventStyles.previewBtnText}>Remove</Text>
                 </TouchableOpacity>
@@ -463,9 +504,11 @@ export default function CreateNewEventScreen() {
               <MaterialCommunityIcons
                 name="image-outline"
                 size={30}
-                color={COLORS.muted}
+                color={colors.muted}
               />
-              <Text style={CreateEventStyles.uploadText}>Tap to add event photo</Text>
+              <Text style={CreateEventStyles.uploadText}>
+                Tap to add event photo
+              </Text>
               <Text style={CreateEventStyles.uploadHint}>No size limit</Text>
             </TouchableOpacity>
           )}
@@ -477,31 +520,39 @@ export default function CreateNewEventScreen() {
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Enter event title..."
-                placeholderTextColor={COLORS.muted}
+                placeholderTextColor={colors.muted}
                 style={CreateEventStyles.input}
               />
             </View>
 
-
-            <Label text="Category (optional id)" />
-            <View style={CreateEventStyles.inputWrap}>
-              <TextInput
-                value={categoryId}
-                onChangeText={setCategoryId}
-                placeholder="Enter categoryId (optional)"
-                placeholderTextColor={COLORS.muted}
-                style={CreateEventStyles.input}
-
+            <Label text="Category" />
+            <TouchableOpacity
+              style={CreateEventStyles.inputWrap}
+              onPress={() => setCatModal(true)}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name="pricetags-outline"
+                size={18}
+                color={colors.muted}
               />
-              <TouchableOpacity style={[CreateEventStyles.inputWrap, { height: 50 }]} onPress={() => setCatModal(true)}>
-
-              <Text style={[CreateEventStyles.input, { paddingVertical: 12 }]}> 
-                {categories.find((c) => c._id === categoryId)?.name ??
-                  "Select a category"}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color={COLORS.muted} />
-              </TouchableOpacity>
-            </View>
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text
+                  style={[CreateEventStyles.input, { paddingVertical: 12 }]}
+                >
+                  {categories.find((c) => c._id === categoryId)?.name ??
+                    "Select a category"}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={colors.muted} />
+              </View>
+            </TouchableOpacity>
 
             <View style={CreateEventStyles.row}>
               <View style={{ flex: 1 }}>
@@ -514,7 +565,7 @@ export default function CreateNewEventScreen() {
                   <Text
                     style={[
                       CreateEventStyles.inputText,
-                      { color: date ? COLORS.text : COLORS.muted },
+                      { color: date ? colors.text : colors.muted },
                     ]}
                   >
                     {date ? formatDate(date) : "dd/mm/yyyy"}
@@ -522,7 +573,7 @@ export default function CreateNewEventScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={18}
-                    color={COLORS.muted}
+                    color={colors.muted}
                   />
                 </TouchableOpacity>
               </View>
@@ -537,7 +588,7 @@ export default function CreateNewEventScreen() {
                   <Text
                     style={[
                       CreateEventStyles.inputText,
-                      { color: time ? COLORS.text : COLORS.muted },
+                      { color: time ? colors.text : colors.muted },
                     ]}
                   >
                     {time ? formatTime(time) : "--:-- --"}
@@ -545,7 +596,7 @@ export default function CreateNewEventScreen() {
                   <Ionicons
                     name="time-outline"
                     size={18}
-                    color={COLORS.muted}
+                    color={colors.muted}
                   />
                 </TouchableOpacity>
               </View>
@@ -560,48 +611,52 @@ export default function CreateNewEventScreen() {
               <Ionicons
                 name="location-outline"
                 size={18}
-                color={COLORS.muted}
+                color={colors.muted}
               />
               <Text style={[CreateEventStyles.input, { paddingVertical: 12 }]}>
                 {placeName ||
                   address ||
                   (locationText ? locationText : "Search a place in Kuwait")}
               </Text>
-                <Ionicons name="search" size={18} color={COLORS.muted} />
+              <Ionicons name="search" size={18} color={colors.muted} />
             </TouchableOpacity>
 
             <Label text="Place name (optional)" />
             <View style={CreateEventStyles.inputWrap}>
-              <Ionicons name="business-outline" size={18} color={COLORS.muted} />
+              <Ionicons
+                name="business-outline"
+                size={18}
+                color={colors.muted}
+              />
               <TextInput
-                value={placeName} 
-                onChangeText={setPlaceName} 
+                value={placeName}
+                onChangeText={setPlaceName}
                 placeholder="e.g. The Avenues Mall"
-                placeholderTextColor={COLORS.muted}
+                placeholderTextColor={colors.muted}
                 style={CreateEventStyles.input}
               />
             </View>
 
             <Label text="Address (optional)" />
             <View style={CreateEventStyles.inputWrap}>
-              <Ionicons name="map-outline" size={18} color={COLORS.muted} />
+              <Ionicons name="map-outline" size={18} color={colors.muted} />
               <TextInput
-                value={address} 
-                onChangeText={setAddress} 
+                value={address}
+                onChangeText={setAddress}
                 placeholder="e.g. Al Rai, Kuwait"
-                placeholderTextColor={COLORS.muted}
+                placeholderTextColor={colors.muted}
                 style={CreateEventStyles.input}
               />
             </View>
 
             <Label text="Duration" />
             <View style={CreateEventStyles.inputWrap}>
-              <Ionicons name="timer-outline" size={18} color={COLORS.muted} />
+              <Ionicons name="timer-outline" size={18} color={colors.muted} />
               <TextInput
-                value={duration} 
-                onChangeText={setDuration} 
+                value={duration}
+                onChangeText={setDuration}
                 placeholder="e.g. 2h"
-                placeholderTextColor={COLORS.muted}
+                placeholderTextColor={colors.muted}
                 style={CreateEventStyles.input}
               />
             </View>
@@ -609,10 +664,13 @@ export default function CreateNewEventScreen() {
             <Label text="Description" />
             <TextInput
               value={description}
-              onChangeText={setDescription} 
+              onChangeText={setDescription}
               placeholder="Describe your event..."
-              placeholderTextColor={COLORS.muted}
-              style={[CreateEventStyles.inputWrap, { height: 110, textAlignVertical: "top" }]}
+              placeholderTextColor={colors.muted}
+              style={[
+                CreateEventStyles.inputWrap,
+                { height: 110, textAlignVertical: "top" },
+              ]}
               multiline
             />
           </View>
@@ -635,7 +693,10 @@ export default function CreateNewEventScreen() {
         animationType="fade"
         onRequestClose={() => setCatModal(false)}
       >
-        <Pressable style={CreateEventStyles.overlay} onPress={() => setCatModal(false)} />
+        <Pressable
+          style={CreateEventStyles.overlay}
+          onPress={() => setCatModal(false)}
+        />
         <View style={CreateEventStyles.modalCard}>
           <Text style={CreateEventStyles.modalTitle}>Choose Category</Text>
           <ScrollView style={{ maxHeight: 280 }}>
@@ -645,7 +706,7 @@ export default function CreateNewEventScreen() {
                 style={{
                   paddingVertical: 12,
                   borderBottomWidth: 1,
-                  borderBottomColor: COLORS.border,
+                  borderBottomColor: colors.border,
                 }}
                 onPress={() => {
                   setCategoryId(c._id);
@@ -654,7 +715,7 @@ export default function CreateNewEventScreen() {
               >
                 <Text
                   style={{
-                    color: COLORS.text,
+                    color: colors.text,
                     fontWeight: c._id === categoryId ? "800" : "600",
                   }}
                 >
@@ -717,10 +778,16 @@ export default function CreateNewEventScreen() {
             style={{ alignSelf: "stretch" }}
           />
           <View style={CreateEventStyles.modalActions}>
-            <TouchableOpacity onPress={cancelPicker} style={CreateEventStyles.btnGhost}>
+            <TouchableOpacity
+              onPress={cancelPicker}
+              style={CreateEventStyles.btnGhost}
+            >
               <Text style={CreateEventStyles.btnGhostText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={confirmPicker} style={CreateEventStyles.btnPrimary}>
+            <TouchableOpacity
+              onPress={confirmPicker}
+              style={CreateEventStyles.btnPrimary}
+            >
               <Text style={CreateEventStyles.btnPrimaryText}>Confirm</Text>
             </TouchableOpacity>
           </View>
@@ -733,4 +800,3 @@ export default function CreateNewEventScreen() {
 const Label = ({ text }: { text: string }) => (
   <Text style={CreateEventStyles.label}>{text}</Text>
 );
-
