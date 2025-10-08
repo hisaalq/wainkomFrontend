@@ -1,4 +1,5 @@
 import { Engagement, fetchEngagementByIdApi } from "@/api/eventsave";
+import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
 import { calculateDistance, estimateTravelTime } from "@/utils/distance";
 import { decodePolyline } from "@/utils/polyline";
@@ -294,9 +295,9 @@ export default function MapScreen() {
           <Text style={MODAL.title}>Saved Events</Text>
           <ScrollView style={{ maxHeight: 320 }}>
             {loadingSaved ? (
-              <Text style={{ color: "#fff" }}>Loading...</Text>
+              <Text style={{ color: COLORS.backgroundn }}>Loading...</Text>
             ) : savedEngagements.length === 0 ? (
-              <Text style={{ color: "#A6AFBD" }}>No saved events.</Text>
+              <Text style={{ color: COLORS.muted }}>No saved events.</Text>
             ) : (
               savedEngagements.map((e) => {
                 const loc = e.event?.location;
@@ -336,18 +337,18 @@ export default function MapScreen() {
                   >
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ color: "#E8EAED", fontWeight: "700", marginBottom: 4 }}>{e.event?.title ?? "Untitled"}</Text>
-                        <Text style={{ color: "#A6AFBD", fontSize: 12 }}>
+                        <Text style={{ color: COLORS.text, fontWeight: "700", marginBottom: 4 }}>{e.event?.title ?? "Untitled"}</Text>
+                        <Text style={{ color: COLORS.muted, fontSize: 12 }}>
                           {e.event?.date} • {e.event?.time}
                         </Text>
                       </View>
                       {hasLocation ? (
-                        <View style={{ backgroundColor: '#00d4ff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
-                          <Text style={{ color: '#0F1A1C', fontSize: 10, fontWeight: '700' }}>📍 VIEW</Text>
+                        <View style={{ backgroundColor: COLORS.primary, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                          <Text style={{ color: COLORS.backgroundd, fontSize: 10, fontWeight: '700' }}>📍 VIEW</Text>
                         </View>
                       ) : (
-                        <View style={{ backgroundColor: '#444', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
-                          <Text style={{ color: '#999', fontSize: 10, fontWeight: '700' }}>No location</Text>
+                        <View style={{ backgroundColor: COLORS.border, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                          <Text style={{ color: COLORS.muted, fontSize: 10, fontWeight: '700' }}>No location</Text>
                         </View>
                       )}
                     </View>

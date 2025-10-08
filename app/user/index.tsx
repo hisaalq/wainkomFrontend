@@ -1,5 +1,6 @@
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { EventItem, fetchEvents } from "@/api/events";
+import { COLORS } from "@/assets/style/color";
 import { LAYOUT, SPACING, TYPO } from "@/assets/style/stylesheet";
 import ReviewModal from "@/components/ReviewModal";
 import AuthContext from "@/context/authcontext";
@@ -157,10 +158,10 @@ export default function Index() {
       <TouchableOpacity
         key={item._id}
         style={{
-          backgroundColor: "#0F1A1C",
+          backgroundColor: COLORS.surface,
           borderRadius: 14,
           borderWidth: 1,
-          borderColor: "#213336",
+          borderColor: COLORS.border,
           padding: 12,
           marginRight: 12,
           width: 260,
@@ -185,32 +186,32 @@ export default function Index() {
           />
         ) : null}
         <Text
-          style={{ color: "#E6F1F2", fontWeight: "800", fontSize: 16 }}
+          style={{ color: COLORS.text, fontWeight: "800", fontSize: 16 }}
           numberOfLines={1}
         >
           {item.title}
         </Text>
         {item.description || item.desc ? (
-          <Text style={{ color: "#8EA3A5", marginTop: 4 }} numberOfLines={2}>
+          <Text style={{ color: COLORS.muted, marginTop: 4 }} numberOfLines={2}>
             {item.description ?? item.desc}
           </Text>
         ) : null}
         <View style={{ flexDirection: "row", marginTop: 8, columnGap: 10 }}>
           {!!item.date && (
-            <Text style={{ color: "#8EA3A5", fontSize: 12 }}>
+            <Text style={{ color: COLORS.muted, fontSize: 12 }}>
               {new Date(item.date).toDateString()}
             </Text>
           )}
           {!!item.time && (
-            <Text style={{ color: "#8EA3A5", fontSize: 12 }}>{item.time}</Text>
+            <Text style={{ color: COLORS.muted, fontSize: 12 }}>{item.time}</Text>
           )}
         </View>
         
         {/* Organizer Info */}
         {(item.organizerName || item.organizerInfo?.name) && (
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, columnGap: 6 }}>
-            <Text style={{ color: "#00d4ff", fontSize: 12 }}>🏢</Text>
-            <Text style={{ color: "#8EA3A5", fontSize: 12 }} numberOfLines={1}>
+            <Text style={{ color: COLORS.primary, fontSize: 12 }}>🏢</Text>
+            <Text style={{ color: COLORS.muted, fontSize: 12 }} numberOfLines={1}>
               {item.organizerInfo?.name || item.organizerName}
             </Text>
           </View>
@@ -220,7 +221,7 @@ export default function Index() {
         {item.rating && (
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, columnGap: 4 }}>
             <Text style={{ color: "#ffd700", fontSize: 12 }}>⭐</Text>
-            <Text style={{ color: "#8EA3A5", fontSize: 12 }}>{item.rating}</Text>
+            <Text style={{ color: COLORS.muted, fontSize: 12 }}>{item.rating}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -419,7 +420,7 @@ export default function Index() {
                 ) : null}
                 <Text
                   style={{
-                    color: "#fff",
+                    color: COLORS.backgroundn,
                     fontSize: 20,
                     fontWeight: "800",
                     marginBottom: 8,
@@ -431,7 +432,7 @@ export default function Index() {
                 {selectedEvent.description || (selectedEvent as any).desc ? (
                   <Text
                     style={{
-                      color: "#bbb",
+                      color: COLORS.muted,
                       fontSize: 15,
                       lineHeight: 22,
                       marginBottom: 10,
@@ -442,26 +443,26 @@ export default function Index() {
                 ) : null}
                 <View style={{ rowGap: 6, marginTop: 4 }}>
                   {!!selectedEvent.date && (
-                    <Text style={{ color: "#aaa" }}>
+                    <Text style={{ color: COLORS.muted }}>
                       🗓 {new Date(selectedEvent.date).toDateString()}
                     </Text>
                   )}
                   {!!selectedEvent.time && (
-                    <Text style={{ color: "#aaa" }}>
+                    <Text style={{ color: COLORS.muted }}>
                       ⏰ {selectedEvent.time}
                     </Text>
                   )}
                   
                   {/* Organizer Info */}
                   {(selectedEvent.organizerName || selectedEvent.organizerInfo?.name) && (
-                    <Text style={{ color: "#aaa" }}>
+                    <Text style={{ color: COLORS.muted }}>
                       🏢 {selectedEvent.organizerInfo?.name || selectedEvent.organizerName}
                     </Text>
                   )}
                   
                   {/* Rating */}
                   {selectedEvent.rating && (
-                    <Text style={{ color: "#aaa" }}>
+                    <Text style={{ color: COLORS.muted }}>
                       ⭐ Rating: {selectedEvent.rating}
                     </Text>
                   )}
@@ -485,13 +486,13 @@ export default function Index() {
               accessibilityRole="button"
               accessibilityLabel="Rate this event"
             >
-              <Text style={{ color: "#000", fontWeight: "800" }}>⭐ Rate This Event</Text>
+              <Text style={{ color: COLORS.backgroundd, fontWeight: "800" }}>⭐ Rate This Event</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={{
                 marginTop: 12,
-                backgroundColor: "#00d4ff",
+                backgroundColor: COLORS.primary,
                 paddingVertical: 12,
                 borderRadius: 10,
                 alignItems: "center",
@@ -503,7 +504,7 @@ export default function Index() {
               accessibilityRole="button"
               accessibilityLabel="Close event details"
             >
-              <Text style={{ color: "#000", fontWeight: "800" }}>Close</Text>
+              <Text style={{ color: COLORS.backgroundd, fontWeight: "800" }}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>

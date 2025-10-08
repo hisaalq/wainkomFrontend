@@ -6,7 +6,7 @@ import AuthContext from '@/context/authcontext';
 import { Link, useRouter } from 'expo-router';
 import { jwtDecode } from 'jwt-decode';
 import { useContext, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 
 
 export default function LoginScreen() {
@@ -42,7 +42,22 @@ export default function LoginScreen() {
     };
 
     return (
-        <View style={[LAYOUT.screen, { gap: 16, justifyContent: 'center' }]}>
+        <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+            <View style={[LAYOUT.screen, { gap: 16, justifyContent: 'center' }]}>
+            <Image 
+                source={require('@/assets/images/wainkom-baige.png')} 
+                style={{ 
+                    width: 120, 
+                    height: 120, 
+                    alignSelf: 'center', 
+                    marginBottom: 16 
+                }} 
+                resizeMode="contain"
+            />
             <Text style={[TYPO.h1, { marginBottom: 6 }]}>WainKom</Text>
             <Text style={[TYPO.muted, { marginBottom: 12 }]}>Welcome back</Text>
 
@@ -75,7 +90,8 @@ export default function LoginScreen() {
                 <Text style={TYPO.muted}>Don't have an account? </Text>
                 <Link href="/signup" style={TYPO.link}>Sign Up</Link>
             </View>
-        </View>
+            </View>
+        </KeyboardAvoidingView>
     );
 }
 
