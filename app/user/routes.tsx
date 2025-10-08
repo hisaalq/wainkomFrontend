@@ -1,12 +1,13 @@
 import { Engagement, fetchEngagementByIdApi } from "@/api/eventsave";
 import AuthContext from "@/context/authcontext";
+import { calculateDistance, estimateTravelTime } from "@/utils/distance";
+import { decodePolyline } from "@/utils/polyline";
 import * as Location from "expo-location";
 import { useLocalSearchParams } from "expo-router";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { MAP, MODAL } from "../../assets/style/stylesheet";
-import { decodePolyline } from "../../utils/polyline";
 
 const KUWAIT = { latitude: 29.3759, longitude: 47.9774 } as const;
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_API_KEY || "";
@@ -75,21 +76,6 @@ export default function MapScreen() {
       return;
     }
 
-    // Haversine formula to calculate distance
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-      const R = 6371; // Radius of Earth in kilometers
-      const dLat = (lat2 - lat1) * (Math.PI / 180);
-      const dLon = (lon2 - lon1) * (Math.PI / 180);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) *
-          Math.cos(lat2 * (Math.PI / 180)) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    };
-
     const distKm = calculateDistance(
       userLoc.latitude,
       userLoc.longitude,
@@ -97,27 +83,15 @@ export default function MapScreen() {
       activeLocation.longitude
     );
 
-    // Format distance
+    // Format distance (remove "away" suffix for consistency with chips)
     if (distKm < 1) {
       setDistance(`${Math.round(distKm * 1000)} m`);
     } else {
       setDistance(`${distKm.toFixed(1)} km`);
     }
 
-    // Estimate travel time (assuming average speed of 40 km/h in city)
-    const avgSpeed = 40; // km/h
-    const timeHours = distKm / avgSpeed;
-    const timeMinutes = Math.round(timeHours * 60);
-    
-    if (timeMinutes < 1) {
-      setTravelTime("< 1 min");
-    } else if (timeMinutes < 60) {
-      setTravelTime(`${timeMinutes} min`);
-    } else {
-      const hours = Math.floor(timeMinutes / 60);
-      const mins = timeMinutes % 60;
-      setTravelTime(`${hours}h ${mins}m`);
-    }
+    // Estimate travel time using utility function
+    setTravelTime(estimateTravelTime(distKm));
   }, [userLoc, selectedModalEvent, eventLocation]);
 
   // Fetch route from Google Directions API when event location is selected

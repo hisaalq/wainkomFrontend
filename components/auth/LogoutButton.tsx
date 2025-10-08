@@ -1,10 +1,8 @@
 import { deleteToken } from "@/api/storage";
-import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useContext } from "react";
-import { Pressable, Text, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 
 export default function LogoutButton() {
@@ -31,7 +29,7 @@ export default function LogoutButton() {
       ]}
     >
       <Icon name="log-out" size={18} color="#ff4d4f" />
-      <Text style={styles.logoutText}>تسجيل الخروج</Text>
+      <Text style={styles.logoutText}>Log out</Text>
     </Pressable>
   );
 }

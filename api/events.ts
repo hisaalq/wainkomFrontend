@@ -1,36 +1,8 @@
+import { CreateEventBody, EventItem, GeoPoint } from "@/types/EventTypes";
 import instance from ".";
 
-export type GeoPoint = {
-  type: "Point";
-  coordinates: [number, number]; // [lng, lat]
-};
-
-export interface EventItem {
-  _id: string;
-  title: string;
-  desc?: string; // some places use `desc`
-  description?: string; // some places use `description`
-  image: string;
-  location?: GeoPoint | string | null;
-  date: string; // ISO string
-  time: string; // e.g., "6:00 PM"
-  rating?: number;
-  categoryId?: string;
-}
-
-export type CreateEventBody = {
-  title: string;
-  description: string;
-  image: string; // URL or local uri (RN)
-  location: [number, number]; // [lng, lat]
-  date: string; // ISO
-  time: string; // "6:00 PM"
-  duration: string;
-  categoryId?: string;
-  // optional extras your backend may accept:
-  placeName?: string;
-  address?: string;
-};
+// Re-export types for backward compatibility
+export type { CreateEventBody, EventItem, GeoPoint };
 
 /** ---------- URL normalizer so images always work in RN ---------- **/
 const API_BASE = instance.defaults.baseURL || "";
@@ -70,12 +42,12 @@ export function buildEventFormData(
       ? "image/jpeg"
       : "image/*";
 
+  // @ts-ignore React Native file part
   fd.append("image", {
-    // @ts-ignore React Native file part
     uri: imageUri,
     name: filename,
     type: mime,
-  });
+  } as any);
 
   return fd;
 }

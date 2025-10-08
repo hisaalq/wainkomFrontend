@@ -2,17 +2,60 @@ import { COLORS } from "@/assets/style/color";
 import { LAYOUT, TYPO } from "@/assets/style/stylesheet";
 import SavedEventRow from "@/components/maps/SavedEventRow";
 import { useSavedEvents, useToggleSavedEvent } from "@/hooks/useSavedEvents";
+import * as Location from "expo-location";
 import { router } from "expo-router";
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, RefreshControl, SectionList, Text, View } from "react-native";
 
 export default function SavedEvents() {
   const { engagements, events, isLoading, isFetching, refetch } = useSavedEvents();
   const toggle = useToggleSavedEvent();
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const onRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  // Get user location
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const position = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.log('Error getting location:', error);
+      }
+    })();
+  }, []);
+
+  // Calculate distance using Haversine formula
+  const calculateDistance = useCallback((eventLat: number, eventLng: number): string => {
+    if (!userLocation) return "";
+    
+    const R = 6371; // Earth radius in km
+    const dLat = (eventLat - userLocation.latitude) * (Math.PI / 180);
+    const dLon = (eventLng - userLocation.longitude) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(userLocation.latitude * (Math.PI / 180)) *
+        Math.cos(eventLat * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distKm = R * c;
+    
+    if (distKm < 1) {
+      return `${Math.round(distKm * 1000)}m away`;
+    } else {
+      return `${distKm.toFixed(1)}km away`;
+    }
+  }, [userLocation]);
 
   const sections = useMemo(() => {
     const now = new Date();
@@ -42,15 +85,22 @@ export default function SavedEvents() {
     const date = item?.date ? new Date(item.date) : undefined;
     const dateStr = date ? date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : undefined;
     const timeStr = typeof item?.time === "string" && item.time.trim() ? item.time.trim() : undefined;
+    
+    // Extract event location and calculate distance
     const loc = item?.location;
-    let locStr: string | undefined;
-    if (typeof loc === "string" && loc.trim()) locStr = loc.trim();
-    else if (loc && typeof loc === "object" && Array.isArray((loc as any).coordinates)) {
-      const [lng, lat] = (loc as any).coordinates as [number, number];
-      locStr = `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    let eventLat: number | undefined;
+    let eventLng: number | undefined;
+    let distanceStr: string | undefined;
+    
+    if (loc && typeof loc === "object" && Array.isArray((loc as any).coordinates)) {
+      [eventLng, eventLat] = (loc as any).coordinates as [number, number];
+      if (eventLat && eventLng) {
+        distanceStr = calculateDistance(eventLat, eventLng);
+      }
     }
+    
     const dt = [dateStr, timeStr].filter(Boolean).join(" · ");
-    return [dt, locStr].filter(Boolean).join("  —  ");
+    return [dt, distanceStr].filter(Boolean).join("  —  ");
   };
 
   if (isLoading) {

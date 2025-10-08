@@ -1,9 +1,13 @@
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { EventItem, fetchEvents } from "@/api/events";
 import { LAYOUT, SPACING, TYPO } from "@/assets/style/stylesheet";
+import ReviewModal from "@/components/ReviewModal";
+import AuthContext from "@/context/authcontext";
+import { getNextWeek, getThisMonth, getThisWeek, getThisWeekend } from "@/utils/dateHelpers";
+import { groupEventsByCategory } from "@/utils/eventHelpers";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Modal,
@@ -16,12 +20,14 @@ import {
 type EventsByCategory = Record<string, EventItem[]>;
 
 export default function Index() {
+  const { isAuthenticated } = useContext(AuthContext);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [locationLabel, setLocationLabel] = useState<string>("Location");
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -113,14 +119,24 @@ export default function Index() {
     return byDate[0];
   }, [events]);
 
+  const eventsByTimePeriod = useMemo(() => {
+    const thisWeekend = getThisWeekend(events);
+    const thisWeek = getThisWeek(events);
+    const nextWeek = getNextWeek(events);
+    const thisMonth = getThisMonth(events);
+    
+    const result: { [key: string]: EventItem[] } = {};
+    
+    if (thisWeekend.length > 0) result["This Weekend"] = thisWeekend;
+    if (thisWeek.length > 0) result["This Week"] = thisWeek;
+    if (nextWeek.length > 0) result["Next Week"] = nextWeek;
+    if (thisMonth.length > 0) result["This Month"] = thisMonth;
+    
+    return result;
+  }, [events]);
+
   const eventsByCategory: EventsByCategory = useMemo(() => {
-    const map: EventsByCategory = {};
-    for (const e of events) {
-      const key = e.categoryId ?? "uncategorized";
-      if (!map[key]) map[key] = [];
-      map[key].push(e);
-    }
-    return map;
+    return groupEventsByCategory(events);
   }, [events]);
 
   const getCategoryName = (id: string | undefined) => {
@@ -189,6 +205,24 @@ export default function Index() {
             <Text style={{ color: "#8EA3A5", fontSize: 12 }}>{item.time}</Text>
           )}
         </View>
+        
+        {/* Organizer Info */}
+        {(item.organizerName || item.organizerInfo?.name) && (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, columnGap: 6 }}>
+            <Text style={{ color: "#00d4ff", fontSize: 12 }}>🏢</Text>
+            <Text style={{ color: "#8EA3A5", fontSize: 12 }} numberOfLines={1}>
+              {item.organizerInfo?.name || item.organizerName}
+            </Text>
+          </View>
+        )}
+        
+        {/* Rating */}
+        {item.rating && (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, columnGap: 4 }}>
+            <Text style={{ color: "#ffd700", fontSize: 12 }}>⭐</Text>
+            <Text style={{ color: "#8EA3A5", fontSize: 12 }}>{item.rating}</Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -278,6 +312,39 @@ export default function Index() {
           </View>
         </View>
       ) : null}
+
+      {/* Time-based sections */}
+      {Object.entries(eventsByTimePeriod).map(([period, items]) => (
+        <View key={period} style={{ marginBottom: SPACING.xl }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <Text style={TYPO.h2}>{period}</Text>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/user/events",
+                  params: { timeFilter: period.toLowerCase().replace(' ', '_') },
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`See all ${period} events`}
+            >
+              <Text style={TYPO.link}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: "row" }}>
+              {items.map(renderEventCard)}
+            </View>
+          </ScrollView>
+        </View>
+      ))}
 
       {/* Category sections */}
       {categories.map((cat) => {
@@ -384,6 +451,20 @@ export default function Index() {
                       ⏰ {selectedEvent.time}
                     </Text>
                   )}
+                  
+                  {/* Organizer Info */}
+                  {(selectedEvent.organizerName || selectedEvent.organizerInfo?.name) && (
+                    <Text style={{ color: "#aaa" }}>
+                      🏢 {selectedEvent.organizerInfo?.name || selectedEvent.organizerName}
+                    </Text>
+                  )}
+                  
+                  {/* Rating */}
+                  {selectedEvent.rating && (
+                    <Text style={{ color: "#aaa" }}>
+                      ⭐ Rating: {selectedEvent.rating}
+                    </Text>
+                  )}
                 </View>
               </View>
             ) : (
@@ -393,6 +474,23 @@ export default function Index() {
             <TouchableOpacity
               style={{
                 marginTop: 16,
+                backgroundColor: "#FFD700",
+                paddingVertical: 12,
+                borderRadius: 10,
+                alignItems: "center",
+              }}
+              onPress={() => {
+                setShowRatingModal(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Rate this event"
+            >
+              <Text style={{ color: "#000", fontWeight: "800" }}>⭐ Rate This Event</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                marginTop: 12,
                 backgroundColor: "#00d4ff",
                 paddingVertical: 12,
                 borderRadius: 10,
@@ -410,6 +508,20 @@ export default function Index() {
           </View>
         </View>
       </Modal>
+
+      {/* Review Modal */}
+      {selectedEvent && (
+        <ReviewModal
+          visible={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          eventId={selectedEvent._id}
+          eventDateISO={selectedEvent.date}
+          eventTime={selectedEvent.time}
+          isAuthenticated={isAuthenticated}
+          isEngaged={true}
+          onEngaged={() => {}}
+        />
+      )}
     </ScrollView>
   );
 }
