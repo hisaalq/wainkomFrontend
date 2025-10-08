@@ -11,7 +11,7 @@ import { decodePolyline } from "../../utils/polyline";
 
 type Props = {
   events: EventItem[];
-  googleApiKey: string;                 // Directions API key
+  googleApiKey: string;
   selectedEventId?: string;             // when user taps a card/marker
   onSelectEvent?: (id: string) => void;
 };
@@ -44,7 +44,7 @@ export default function EventRouteMap({ events, googleApiKey, selectedEventId, o
         const url =
           `https://maps.googleapis.com/maps/api/directions/json?` +
           `origin=${userLoc.lat},${userLoc.lng}&destination=${selected.lat},${selected.lng}` +
-          `&mode=driving&key=${googleApiKey}`;
+          `&mode=driving&key=${process.env.GOOGLE_API_KEY}`;
         const res = await fetch(url);
         const json = await res.json();
         const route = json.routes?.[0];

@@ -20,7 +20,7 @@ export const removeEngagementApi = async (id: string) => {
   return data;
 };
 export async function fetchEngagementByIdApi(): Promise<Engagement[]> {
-  // userId: string
+  // Fetches engagements for the currently authenticated user (based on token)
   const { data } = await instance.get(`/engagement`);
   return data;
 }

@@ -1,4 +1,3 @@
-import { nBaseURL } from "@/api";
 import { CategoryItem, fetchCategories } from "@/api/categories";
 import { EventItem, fetchEvents } from "@/api/events";
 import { LAYOUT, SPACING, TYPO } from "@/assets/style/stylesheet";
@@ -160,7 +159,7 @@ export default function Index() {
       >
         {item.image ? (
           <Image
-            source={{ uri: `${nBaseURL}${item.image}` }}
+            source={{ uri: item.image }}
             style={{
               width: "100%",
               height: 140,

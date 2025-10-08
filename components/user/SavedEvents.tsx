@@ -95,7 +95,29 @@ export default function SavedEvents() {
             isSaved={true}
             onPress={() => {
               try {
-                router.push({ pathname: "/user/events", params: { focusEventId: (item as any)._id ?? (item as any).id } } as any);
+                // Navigate to routes/maps screen with event location
+                const loc = item?.location;
+                let lat: number | undefined;
+                let lng: number | undefined;
+                
+                if (loc && typeof loc === "object" && Array.isArray((loc as any).coordinates)) {
+                  [lng, lat] = (loc as any).coordinates as [number, number];
+                }
+                
+                if (lat && lng) {
+                  router.push({ 
+                    pathname: "/user/routes", 
+                    params: { 
+                      eventId: (item as any)._id ?? (item as any).id,
+                      eventTitle: item.title ?? "Event",
+                      eventLat: lat.toString(),
+                      eventLng: lng.toString()
+                    } 
+                  } as any);
+                } else {
+                  // No location data, just navigate to routes
+                  router.push("/user/routes");
+                }
               } catch (_e) {
                 // ignore
               }
