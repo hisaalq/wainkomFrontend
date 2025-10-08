@@ -4,7 +4,7 @@ import { BUTTONS, FORMS, LAYOUT, TYPO } from '@/assets/style/stylesheet';
 import AuthContext from '@/context/authcontext';
 import { Link, useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
 export default function SignupScreen() {
     const { setIsAuthenticated } = useContext(AuthContext);
@@ -76,10 +76,27 @@ export default function SignupScreen() {
     };
 
     return (
-        <ScrollView style={LAYOUT.screen} contentContainerStyle={{ paddingBottom: 24 }}>
-            <View style={{ height: 140, borderRadius: 16, backgroundColor: '#111', marginBottom: 12, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={TYPO.muted}>WainKom Logo</Text>
-            </View>
+        <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
+            <ScrollView 
+                style={LAYOUT.screen} 
+                contentContainerStyle={{ paddingBottom: 24 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+            <Image 
+                source={require('@/assets/images/wainkom-baige.png')} 
+                style={{ 
+                    width: 120, 
+                    height: 120, 
+                    alignSelf: 'center', 
+                    marginBottom: 16 
+                }} 
+                resizeMode="contain"
+            />
 
             <Text style={TYPO.h2}>Create your account</Text>
 
@@ -137,7 +154,8 @@ export default function SignupScreen() {
                     Already have an account? <Link href="/" style={TYPO.link}>Log In</Link>
                 </Text>
             </View>
-        </ScrollView>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 

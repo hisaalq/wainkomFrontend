@@ -34,7 +34,7 @@ const PressableCard = ({ left, title, value, onPress }: ItemProps) => {
       android_ripple={{ color: COLORS.primary, foreground: true }}
       style={({ pressed }) => [
         styles.item,
-        pressed && { borderColor: COLORS.primary, backgroundColor: "#121318" },
+        pressed && { borderColor: COLORS.primary, backgroundColor: COLORS.surfaceAlt },
       ]}
     >
       <View style={styles.leftIcon}>{left}</View>
@@ -106,7 +106,7 @@ export default function MoreScreen() {
   if (isLoading) {
     return (
       <View style={LAYOUT.screen}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text>Loading profile...</Text>
       </View>
     );
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: COLORS.backgroundd,
         shadowOpacity: 0.2,
         shadowOffset: { width: 0, height: 4 },
         shadowRadius: 8,

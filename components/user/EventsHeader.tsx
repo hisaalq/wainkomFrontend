@@ -1,4 +1,5 @@
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
+import { COLORS } from "@/assets/style/color";
 import { formatDate, formatTime, isDateInPeriod } from "@/utils/dateHelpers";
 import { coordKey, extractCoords, getReadableLocation } from "@/utils/eventHelpers";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -255,7 +256,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
           >
             <Text style={styles.filterTextActive}>Clear All Filters</Text>
             {activeFilter === "none" && (
-              <Ionicons name="checkmark-circle" size={20} color="#00d4ff" />
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
             )}
           </TouchableOpacity>
           {FILTERS.map((filter) => (
@@ -281,7 +282,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
                 {filter.label}
               </Text>
               {activeFilter === filter.key && (
-                <Ionicons name="checkmark-circle" size={20} color="#00d4ff" />
+                <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
               )}
             </TouchableOpacity>
           ))}
@@ -301,7 +302,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
                 <Text style={styles.dateInputText}>
                   Start: {customStartDate ? customStartDate.toDateString() : 'Select start date'}
                 </Text>
-                <Ionicons name="calendar-outline" size={20} color="#00d4ff" />
+                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
               </TouchableOpacity>
               
               <TouchableOpacity
@@ -314,7 +315,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
                 <Text style={styles.dateInputText}>
                   End: {customEndDate ? customEndDate.toDateString() : 'Select end date'}
                 </Text>
-                <Ionicons name="calendar-outline" size={20} color="#00d4ff" />
+                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
               </TouchableOpacity>
               
               {customStartDate && customEndDate && (
@@ -359,7 +360,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
       <Ionicons
         name="options-outline"
         size={24}
-        color={activeFilter !== "none" ? "#00d4ff" : "#fff"}
+        color={activeFilter !== "none" ? COLORS.primary : COLORS.backgroundn}
       />
       {activeFilter !== "none" && <View style={styles.filterDot} />}
     </TouchableOpacity>
@@ -380,12 +381,12 @@ export default function EventsScreen({ userId }: { userId: string }) {
           <Ionicons
             name="search"
             size={22}
-            color="#999"
+            color={COLORS.muted}
             style={{ marginRight: 8 }}
           />
           <TextInput
             placeholder="Search events..."
-            placeholderTextColor="#999"
+            placeholderTextColor={COLORS.muted}
             style={styles.searchInput}
             value={searchText}
             onChangeText={setSearchText}
@@ -407,19 +408,19 @@ export default function EventsScreen({ userId }: { userId: string }) {
             <MaterialCommunityIcons
               name="shape"
               size={28}
-              color={selectedCat === "all" ? "#00d4ff" : "#aaa"}
+              color={selectedCat === "all" ? COLORS.primary : COLORS.muted}
             />
             <Text
               style={[
                 styles.catText,
-                selectedCat === "all" && { color: "#00d4ff" },
+                selectedCat === "all" && { color: COLORS.primary },
               ]}
             >
               All
             </Text>
           </TouchableOpacity>
 
-          {catLoading && <Text style={{ color: "#fff" }}>Loading...</Text>}
+          {catLoading && <Text style={{ color: COLORS.backgroundn }}>Loading...</Text>}
           {catError && (
             <Text style={{ color: "red" }}>Failed to load categories</Text>
           )}
@@ -436,12 +437,12 @@ export default function EventsScreen({ userId }: { userId: string }) {
               <MaterialCommunityIcons
                 name={((c as any).icon as any) ?? "shape-outline"}
                 size={28}
-                color={selectedCat === c._id ? "#00d4ff" : "#aaa"}
+                color={selectedCat === c._id ? COLORS.primary : COLORS.muted}
               />
               <Text
                 style={[
                   styles.catText,
-                  selectedCat === c._id && { color: "#00d4ff" },
+                  selectedCat === c._id && { color: COLORS.primary },
                 ]}
               >
                 {c.name as any}
@@ -455,7 +456,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
           <FilterBtn />
         </View>
 
-        {isLoading && <ActivityIndicator color="#00d4ff" size="large" />}
+        {isLoading && <ActivityIndicator color={COLORS.primary} size="large" />}
         {error && <Text style={{ color: "red" }}>Failed to load events.</Text>}
 
         {filteredEvents.map((ev) => {
@@ -477,7 +478,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
                     <Ionicons
                       name={savedEvents.includes(ev._id) ? "bookmark" : "bookmark-outline"}
                       size={22}
-                      color={savedEvents.includes(ev._id) ? "#00d4ff" : "#fff"}
+                      color={savedEvents.includes(ev._id) ? COLORS.primary : COLORS.backgroundn}
                     />
                   </TouchableOpacity>
                 </View>
@@ -608,15 +609,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 50,
     paddingHorizontal: 20,
-    backgroundColor: "#121212",
+    backgroundColor: COLORS.backgroundd,
   },
   topRow: {
     flexDirection: "row",
     justifyContent: "flex-end", 
     alignItems: "center",
   },
-  title: { fontSize: 28, fontWeight: "700", color: "#fff" },
-  subtitle: { fontSize: 16, color: "#aaa", marginTop: 4 },
+  title: { fontSize: 28, fontWeight: "700", color: COLORS.backgroundn },
+  subtitle: { fontSize: 16, color: COLORS.muted, marginTop: 4 },
   rightIcons: { flexDirection: "row", alignItems: "center" },
   bellWrapper: { marginRight: 16 },
   redDot: {
@@ -632,30 +633,30 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1e1e1e",
+    backgroundColor: COLORS.surface,
     marginTop: 20,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  searchInput: { color: "#fff", flex: 1, fontSize: 16 },
+  searchInput: { color: COLORS.backgroundn, flex: 1, fontSize: 16 },
   categoriesRow: { marginTop: 24, paddingBottom: 16 },
   catCard: {
     width: cardSize,
     height: cardSize,
-    backgroundColor: "#1e1e1e",
+    backgroundColor: COLORS.surface,
     borderRadius: 18,
     marginRight: 18,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: COLORS.backgroundd,
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  catCardActive: { borderWidth: 1.5, borderColor: "#00d4ff" },
-  catText: { color: "#aaa", marginTop: 6, fontSize: 15, fontWeight: "500" },
+  catCardActive: { borderWidth: 1.5, borderColor: COLORS.primary },
+  catText: { color: COLORS.muted, marginTop: 6, fontSize: 15, fontWeight: "500" },
 
   filterRow: {
     flexDirection: "row",
@@ -665,17 +666,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   upcomingTitle: {
-    color: "#fff",
+    color: COLORS.backgroundn,
     fontSize: 22,
     fontWeight: "700",
   },
   eventCard: {
     flexDirection: "row",
-    backgroundColor: "#1e1e1e",
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     marginBottom: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: COLORS.backgroundd,
     shadowOpacity: 0.2,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
@@ -696,7 +697,7 @@ const styles = StyleSheet.create({
   },
   categoryBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -726,11 +727,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#1e1e1e",
+    backgroundColor: COLORS.surface,
     borderRadius: 15,
     padding: 20,
     width: "85%",
-    shadowColor: "#000",
+    shadowColor: COLORS.backgroundd,
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 5,
@@ -742,7 +743,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   modalTitle: {
-    color: "#fff",
+    color: COLORS.backgroundn,
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
@@ -751,7 +752,7 @@ const styles = StyleSheet.create({
   modalDesc: { color: "#bbb", fontSize: 16, marginBottom: 10, lineHeight: 22 },
   closeBtn: {
     marginTop: 15,
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 10,
     alignItems: "center",
@@ -761,16 +762,16 @@ const styles = StyleSheet.create({
 
   filterBtn: {
     padding: 8,
-    backgroundColor: "#1e1e1e",
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: COLORS.border,
   },
   filterDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     position: "absolute",
     top: 5,
     right: 5,
@@ -785,17 +786,17 @@ const styles = StyleSheet.create({
     paddingRight: 20,      
   },
   filterModalContent: {
-    backgroundColor: "#1e1e1e",
+    backgroundColor: COLORS.surface,
     borderRadius: 10,
     padding: 15,
     width: 250,
-    shadowColor: "#000",
+    shadowColor: COLORS.backgroundd,
     shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 10,
   },
   filterModalTitle: {
-    color: "#fff",
+    color: COLORS.backgroundn,
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
@@ -812,7 +813,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#2a2a2a",
   },
   filterText: {
-    color: "#ccc",
+    color: COLORS.muted,
     fontSize: 15,
   },
   filterTextActive: {
@@ -827,7 +828,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#333",
   },
   customDateTitle: {
-    color: "#fff",
+    color: COLORS.backgroundn,
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
@@ -836,26 +837,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#2a2a2a",
+    backgroundColor: COLORS.surfaceAlt,
     padding: 12,
     borderRadius: 8,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: COLORS.border,
   },
   dateInputText: {
-    color: "#ccc",
+    color: COLORS.muted,
     fontSize: 14,
   },
   applyCustomFilter: {
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 10,
   },
   applyCustomFilterText: {
-    color: "#000",
+    color: COLORS.backgroundd,
     fontSize: 16,
     fontWeight: "bold",
   },

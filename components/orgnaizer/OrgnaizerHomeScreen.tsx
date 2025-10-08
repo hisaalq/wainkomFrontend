@@ -23,19 +23,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const colors = {
-  bg: "#0F1115",
-  surface: "#151922",
-  surfaceAlt: "#10151C",
-  border: "#1E2430",
-  primary: "#2EA6A6",
-  primaryDim: "#1D7D7D",
-  text: "#E8EAED",
-  muted: "#A6AFBD",
-  heading: "#F4F7FA",
-  rating: "#F5C542",
-};
-
 type EventDoc = {
   _id: string;
   title: string;
@@ -186,10 +173,10 @@ const OrganizerHomeScreen = () => {
         style={{
           flex: 1,
           justifyContent: "center",
-          backgroundColor: colors.bg,
+          backgroundColor: COLORS.backgroundd,
         }}
       >
-        <ActivityIndicator color={colors.primary} size="large" />
+        <ActivityIndicator color={COLORS.primary} size="large" />
       </View>
     );
   }
@@ -213,14 +200,14 @@ const OrganizerHomeScreen = () => {
               style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
             >
               {refreshing && (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={COLORS.primary} />
               )}
 
               <TouchableOpacity
                 style={styles.circleBtn}
                 onPress={() => router.push("/createEvent")}
               >
-                <Ionicons name="add" size={18} color={colors.text} />
+                <Ionicons name="add" size={18} color={COLORS.text} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -232,7 +219,7 @@ const OrganizerHomeScreen = () => {
                 <Ionicons
                   name="notifications-outline"
                   size={18}
-                  color={colors.text}
+                  color={COLORS.text}
                 />
               </TouchableOpacity>
 
@@ -243,7 +230,7 @@ const OrganizerHomeScreen = () => {
                   <Image source={{ uri: orgImage }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person" size={18} color={colors.muted} />
+                    <Ionicons name="person" size={18} color={COLORS.muted} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -259,7 +246,7 @@ const OrganizerHomeScreen = () => {
           <Text style={styles.sectionTitle}>My Events</Text>
 
           {events.length === 0 ? (
-            <Text style={{ color: colors.muted, paddingHorizontal: 4 }}>
+            <Text style={{ color: COLORS.muted, paddingHorizontal: 4 }}>
               No events yet.
             </Text>
           ) : (
@@ -305,7 +292,7 @@ const OrganizerHomeScreen = () => {
               value={newTitle}
               onChangeText={setNewTitle}
               placeholder="Enter new title"
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={COLORS.muted}
               style={styles.input}
             />
 
@@ -316,7 +303,7 @@ const OrganizerHomeScreen = () => {
               {newImage ? (
                 <Image source={{ uri: newImage }} style={styles.previewImg} />
               ) : (
-                <Ionicons name="image-outline" size={32} color={colors.muted} />
+                <Ionicons name="image-outline" size={32} color={COLORS.muted} />
               )}
             </TouchableOpacity>
 
@@ -325,7 +312,7 @@ const OrganizerHomeScreen = () => {
               value={newDescription}
               onChangeText={setNewDescription}
               placeholder="Update event description..."
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={COLORS.muted}
               multiline
               style={styles.textArea}
             />
@@ -334,17 +321,17 @@ const OrganizerHomeScreen = () => {
               <TouchableOpacity
                 style={[
                   styles.modalBtn,
-                  { backgroundColor: colors.surfaceAlt },
+                  { backgroundColor: COLORS.surfaceAlt },
                 ]}
                 onPress={() => setEditModalVisible(false)}
               >
-                <Text style={{ color: colors.muted }}>Cancel</Text>
+                <Text style={{ color: COLORS.muted }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                style={[styles.modalBtn, { backgroundColor: COLORS.primary }]}
                 onPress={handleSaveChanges}
               >
-                <Text style={{ color: "#fff", fontWeight: "800" }}>Save</Text>
+                <Text style={{ color: COLORS.backgroundn, fontWeight: "800" }}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -355,7 +342,7 @@ const OrganizerHomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.bg },
+  safeArea: { flex: 1, backgroundColor: COLORS.backgroundd },
   container: { flex: 1 },
   scroll: { padding: 16 },
   topHeader: {
@@ -364,14 +351,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  appTitle: { color: colors.heading, fontSize: 22, fontWeight: "800" },
+  appTitle: { color: COLORS.heading, fontSize: 22, fontWeight: "800" },
   circleBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: COLORS.surfaceAlt,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -380,36 +367,36 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: COLORS.surfaceAlt,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.border,
   },
   sectionTitle: {
-    color: colors.heading,
+    color: COLORS.heading,
     fontSize: 16,
     fontWeight: "800",
     marginBottom: 10,
   },
   eventCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: COLORS.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.border,
     flexDirection: "row",
     gap: 12,
     padding: 10,
     marginBottom: 12,
   },
   thumb: { width: 90, height: 90, borderRadius: 10 },
-  eventTitle: { color: colors.text, fontWeight: "700", fontSize: 15 },
-  eventDesc: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  dateText: { color: colors.primary, fontSize: 12, marginTop: 4 },
+  eventTitle: { color: COLORS.text, fontWeight: "700", fontSize: 15 },
+  eventDesc: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
+  dateText: { color: COLORS.primary, fontSize: 12, marginTop: 4 },
   actionRow: { flexDirection: "row", gap: 8, marginTop: 8 },
   editBtn: {
     flexDirection: "row",
-    backgroundColor: colors.primary,
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -434,44 +421,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   modalCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 18,
     width: "100%",
   },
   modalTitle: {
-    color: colors.heading,
+    color: COLORS.heading,
     fontSize: 18,
     fontWeight: "800",
     marginBottom: 12,
   },
   input: {
-    backgroundColor: colors.surfaceAlt,
-    borderColor: colors.border,
+    backgroundColor: COLORS.surfaceAlt,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 12,
-    color: colors.text,
+    color: COLORS.text,
     padding: 10,
     marginBottom: 10,
   },
   imagePicker: {
     height: 150,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: COLORS.surfaceAlt,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: COLORS.border,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
   },
   previewImg: { width: "100%", height: "100%", borderRadius: 12 },
-  label: { color: colors.text, fontWeight: "700", marginBottom: 6 },
+  label: { color: COLORS.text, fontWeight: "700", marginBottom: 6 },
   textArea: {
-    backgroundColor: colors.surfaceAlt,
-    borderColor: colors.border,
+    backgroundColor: COLORS.surfaceAlt,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 12,
-    color: colors.text,
+    color: COLORS.text,
     padding: 10,
     minHeight: 100,
     textAlignVertical: "top",

@@ -1,6 +1,7 @@
 import { apiOrigin } from "@/api";
 // Engagement feature removed
 import { deleteAccount, getProfile, updateUser } from "@/api/user";
+import { COLORS } from "@/assets/style/color";
 import { BUTTONS, LAYOUT, TYPO } from "@/assets/style/stylesheet";
 import AuthContext from "@/context/authcontext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -326,7 +327,7 @@ const editModalStyles = StyleSheet.create({
   modalView: {
     width: "100%",
     height: "90%",
-    backgroundColor: "#0b0f12",
+    backgroundColor: COLORS.backgroundd,
     borderTopRightRadius: 20,
     borderTopLeftRadius: 20,
     padding: 20,
@@ -338,12 +339,12 @@ const editModalStyles = StyleSheet.create({
     paddingBottom: 10,
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e1e1e",
+    borderBottomColor: COLORS.border,
   },
   headerText: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#fff",
+    color: COLORS.backgroundn,
   },
   closeButton: {
     padding: 5,
@@ -354,27 +355,27 @@ const editModalStyles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: "#00d4ff",
+    borderColor: COLORS.primary,
   },
   imageButton: {
     position: "absolute",
     bottom: 0,
     right: "35%",
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     borderRadius: 20,
     padding: 8,
   },
   inputGroup: { marginBottom: 15 },
   label: {
-    color: "#fff",
+    color: COLORS.backgroundn,
     fontSize: 14,
     marginBottom: 5,
     fontWeight: "600",
     textAlign: "right",
   },
   input: {
-    backgroundColor: "#0f1720",
-    color: "#fff",
+    backgroundColor: COLORS.surface,
+    color: COLORS.backgroundn,
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 10,
@@ -383,20 +384,20 @@ const editModalStyles = StyleSheet.create({
   },
   textArea: { height: 100, textAlignVertical: "top" },
   updateButton: {
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     padding: 15,
     marginTop: 20,
     alignItems: "center",
   },
-  disabledButton: { backgroundColor: "#00d4ff50" },
-  buttonText: { color: "#0b0f12", fontSize: 18, fontWeight: "bold" },
+  disabledButton: { backgroundColor: COLORS.surfaceAlt },
+  buttonText: { color: COLORS.backgroundd, fontSize: 18, fontWeight: "bold" },
   errorText: { color: "red", textAlign: "center", marginTop: 10, fontSize: 14 },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0b0f12" },
-  cardHeader: { backgroundColor: "#0f1720", borderRadius: 12, padding: 14 },
+  container: { flex: 1, backgroundColor: COLORS.backgroundd },
+  cardHeader: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 14 },
   row: { flexDirection: "row", alignItems: "center" },
 
   profileAvatar: {
@@ -404,10 +405,10 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 2,
-    borderColor: "#00d4ff",
+    borderColor: COLORS.primary,
   },
   editButton: {
-    backgroundColor: "#00d4ff",
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     padding: 8,
     marginTop: 15,
@@ -416,22 +417,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   editButtonText: {
-    color: "#0b0f12",
+    color: COLORS.backgroundd,
     marginLeft: 8,
     fontWeight: "bold",
     fontSize: 14,
   },
 
-  name: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  email: { color: "#9ca3af", marginTop: 4 },
+  name: { color: COLORS.backgroundn, fontWeight: "700", fontSize: 16 },
+  email: { color: COLORS.muted, marginTop: 4 },
   input: {
-    color: "#e6eef0",
-    borderColor: "#213336",
+    color: COLORS.text,
+    borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
     marginBottom: 10,
-    backgroundColor: "#0f1720",
+    backgroundColor: COLORS.surface,
   },
   cameraBadge: {
     position: 'absolute',
@@ -440,28 +441,28 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#00d4ff',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#0B1416',
+    borderColor: COLORS.backgroundd,
   },
   primaryBtn: {
-    backgroundColor: '#00d4ff',
+    backgroundColor: COLORS.primary,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
   },
-  primaryBtnText: { color: '#0B1416', fontWeight: '900' },
+  primaryBtnText: { color: COLORS.backgroundd, fontWeight: '900' },
   secondaryBtn: {
-    backgroundColor: '#213336',
+    backgroundColor: COLORS.border,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
   },
-  secondaryBtnText: { color: '#e6eef0', fontWeight: '600' },
+  secondaryBtnText: { color: COLORS.text, fontWeight: '600' },
   settingsItem: {
-    backgroundColor: "#0f1720",
+    backgroundColor: COLORS.surface,
     marginTop: 12,
     padding: 14,
     borderRadius: 12,
@@ -474,12 +475,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "#062526",
+    backgroundColor: COLORS.surfaceAlt,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  itemText: { color: "#e6eef0", fontSize: 15 },
+  itemText: { color: COLORS.text, fontSize: 15 },
 });
 
 export default ProfileScreen;
