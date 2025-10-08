@@ -13,6 +13,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -117,6 +118,12 @@ export default function MoreScreenUser() {
           left={<Ionicons name="calendar-outline" size={22} color={COLORS.primary} />}
           title="My Events"
           onPress={() => router.push("/myEvents" as any)}
+        />
+
+        <PressableCard
+          left={<Ionicons name="logo-instagram" size={22} color="#E4405F" />}
+          title="Follow us on Instagram"
+          onPress={() => Linking.openURL("https://www.instagram.com/p/DPSLx7ejMuQ/?ig_mid=290DA808-7282-4862-B6B2-DA64973C876D&utm_source=igweb")}
         />
 
         {/* Inline edit happens inside profile; no separate route */}

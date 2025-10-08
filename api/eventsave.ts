@@ -1,14 +1,8 @@
+import { Engagement } from "@/types/EventTypes";
 import instance from ".";
-import { EventItem } from "./events";
 
-export interface Engagement {
-  _id: string;
-  user: string;
-  event: EventItem; // <- populated Event
-  attended?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+// Re-export type for backward compatibility
+export type { Engagement };
 
 export const saveEngagementApi = async (eventId: string) => {
   const { data } = await instance.post("/engagement", { eventId });

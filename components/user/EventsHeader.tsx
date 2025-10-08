@@ -1,5 +1,8 @@
 import { removeEngagementApi, saveEngagementApi } from "@/api/eventsave";
+import { formatDate, formatTime, isDateInPeriod } from "@/utils/dateHelpers";
+import { coordKey, extractCoords, getReadableLocation } from "@/utils/eventHelpers";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -18,6 +21,7 @@ import {
 } from "react-native";
 import { CategoryItem, fetchCategories } from "../../api/categories";
 import { EventItem as BaseEventItem, fetchEvents } from "../../api/events";
+import ReviewModal from "../ReviewModal";
 
 const { width } = Dimensions.get("window");
 const cardSize = 100;
@@ -27,15 +31,21 @@ type FilterType =
   | "name_asc"
   | "name_desc"
   | "date_week"
+  | "date_weekend"
+  | "date_next_week"
   | "date_month"
-  | "date_year";
+  | "date_year"
+  | "date_custom";
 
 const FILTERS = [
   { key: "name_asc" as FilterType, label: "Name: A to Z" },
   { key: "name_desc" as FilterType, label: "Name: Z to A" },
   { key: "date_week" as FilterType, label: "This Week" },
+  { key: "date_weekend" as FilterType, label: "This Weekend" },
+  { key: "date_next_week" as FilterType, label: "Next Week" },
   { key: "date_month" as FilterType, label: "Next Month" },
   { key: "date_year" as FilterType, label: "Next Year" },
+  { key: "date_custom" as FilterType, label: "Custom Date Range" },
 ];
 // ---------------------------------
 
@@ -50,35 +60,14 @@ type EventItem = BaseEventItem & {
       };
 };
 
-const isDateInPeriod = (
-  eventDate: string,
-  period: "date_week" | "date_month" | "date_year"
-): boolean => {
-  const now = new Date();
-  const event = new Date(eventDate);
-
-  if (event < now) return false;
-
-  let start = new Date(now);
-  let end = new Date(now);
-
-  if (period === "date_week") {
-    end.setDate(now.getDate() + 7);
-  } else if (period === "date_month") {
-    end.setMonth(now.getMonth() + 2);
-    end.setDate(0);
-  } else if (period === "date_year") {
-    end.setFullYear(now.getFullYear() + 1);
-  }
-
-  return event > now && event <= end;
-};
+// Removed - now using utility function from @/utils/dateHelpers
 
 export default function EventsScreen({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
   const [selectedCat, setSelectedCat] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   const [savedEvents, setSavedEvents] = useState<string[]>([]);
@@ -88,30 +77,12 @@ export default function EventsScreen({ userId }: { userId: string }) {
 
   const [activeFilter, setActiveFilter] = useState<FilterType>("none");
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerType, setDatePickerType] = useState<'start' | 'end'>('start');
 
-  const formatDate = (dateString: string) => {
-    try {
-      return new Intl.DateTimeFormat("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(new Date(dateString));
-    } catch {
-      return "Invalid date";
-    }
-  };
-
-  const formatTime = (dateString: string) => {
-    try {
-      return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      }).format(new Date(dateString));
-    } catch {
-      return "Invalid time";
-    }
-  };
+  // Using utility functions from @/utils/dateHelpers
 
   const {
     data: categories,
@@ -143,7 +114,16 @@ export default function EventsScreen({ userId }: { userId: string }) {
     });
 
     if (activeFilter.startsWith("date_")) {
-      list = list.filter((ev) => isDateInPeriod(ev.date, activeFilter as any));
+      if (activeFilter === "date_custom") {
+        if (customStartDate && customEndDate) {
+          list = list.filter((ev) => {
+            const eventDate = new Date(ev.date);
+            return eventDate >= customStartDate && eventDate <= customEndDate;
+          });
+        }
+      } else {
+        list = list.filter((ev) => isDateInPeriod(ev.date, activeFilter as any));
+      }
     }
 
     list.sort((a, b) => {
@@ -186,22 +166,7 @@ export default function EventsScreen({ userId }: { userId: string }) {
   );
   const pendingKeys = useRef<Set<string>>(new Set());
 
-  const coordKey = (lng: number, lat: number) =>
-    `${lat.toFixed(6)},${lng.toFixed(6)}`;
-
-  const extractCoords = (ev: EventItem): [number, number] | null => {
-    if (typeof ev.location === "string") return null;
-    const c = ev.location?.coordinates;
-    if (
-      Array.isArray(c) &&
-      c.length === 2 &&
-      Number.isFinite(c[0]) &&
-      Number.isFinite(c[1])
-    ) {
-      return [c[0], c[1]]; 
-    }
-    return null;
-  };
+  // Using utility functions from @/utils/eventHelpers
 
   useEffect(() => {
     (async () => {
@@ -244,18 +209,8 @@ export default function EventsScreen({ userId }: { userId: string }) {
     })();
   }, [filteredEvents, locationCache]);
 
-  const readableLocation = (ev: EventItem) => {
-    if ((ev as any).placeName) return String((ev as any).placeName);
-    if ((ev as any).address) return String((ev as any).address);
-    const coords = extractCoords(ev);
-    if (coords) {
-      const [lng, lat] = coords;
-      const key = coordKey(lng, lat);
-      return locationCache[key] ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    }
-    if (typeof ev.location === "string") return ev.location;
-    return "Unknown location";
-  };
+  // Using utility function from @/utils/eventHelpers
+  const readableLocation = (ev: EventItem) => getReadableLocation(ev, locationCache);
 
   const toggleBookmark = async (eventId: string) => {
     const isSaved = savedEvents.includes(eventId);
@@ -293,6 +248,8 @@ export default function EventsScreen({ userId }: { userId: string }) {
             style={styles.filterItem}
             onPress={() => {
               setActiveFilter("none");
+              setCustomStartDate(null);
+              setCustomEndDate(null);
               setShowFilterModal(false);
             }}
           >
@@ -306,8 +263,13 @@ export default function EventsScreen({ userId }: { userId: string }) {
               key={filter.key}
               style={styles.filterItem}
               onPress={() => {
-                setActiveFilter(filter.key);
-                setShowFilterModal(false);
+                if (filter.key === "date_custom") {
+                  // Don't close modal for custom date selection
+                  setActiveFilter(filter.key);
+                } else {
+                  setActiveFilter(filter.key);
+                  setShowFilterModal(false);
+                }
               }}
             >
               <Text
@@ -323,8 +285,69 @@ export default function EventsScreen({ userId }: { userId: string }) {
               )}
             </TouchableOpacity>
           ))}
+          
+          {/* Custom Date Range Selection */}
+          {activeFilter === "date_custom" && (
+            <View style={styles.customDateContainer}>
+              <Text style={styles.customDateTitle}>Select Date Range</Text>
+              
+              <TouchableOpacity
+                style={styles.dateInput}
+                onPress={() => {
+                  setDatePickerType('start');
+                  setShowDatePicker(true);
+                }}
+              >
+                <Text style={styles.dateInputText}>
+                  Start: {customStartDate ? customStartDate.toDateString() : 'Select start date'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="#00d4ff" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.dateInput}
+                onPress={() => {
+                  setDatePickerType('end');
+                  setShowDatePicker(true);
+                }}
+              >
+                <Text style={styles.dateInputText}>
+                  End: {customEndDate ? customEndDate.toDateString() : 'Select end date'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="#00d4ff" />
+              </TouchableOpacity>
+              
+              {customStartDate && customEndDate && (
+                <TouchableOpacity
+                  style={styles.applyCustomFilter}
+                  onPress={() => setShowFilterModal(false)}
+                >
+                  <Text style={styles.applyCustomFilterText}>Apply Filter</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </TouchableOpacity>
+      
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={datePickerType === 'start' ? (customStartDate || new Date()) : (customEndDate || new Date())}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowDatePicker(false);
+            if (selectedDate) {
+              if (datePickerType === 'start') {
+                setCustomStartDate(selectedDate);
+              } else {
+                setCustomEndDate(selectedDate);
+              }
+            }
+          }}
+        />
+      )}
     </Modal>
   );
 
@@ -538,6 +561,15 @@ export default function EventsScreen({ userId }: { userId: string }) {
               )}
 
               <TouchableOpacity
+                style={[styles.closeBtn, { backgroundColor: "#FFD700" }]}
+                onPress={() => {
+                  setShowRatingModal(true);
+                }}
+              >
+                <Text style={[styles.btnText, { color: "#000" }]}>⭐ Rate This Event</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.closeBtn}
                 onPress={() => {
                   setModalVisible(false);
@@ -549,6 +581,22 @@ export default function EventsScreen({ userId }: { userId: string }) {
             </View>
           </View>
         </Modal>
+
+        {/* Review Modal */}
+        {selectedEvent && (
+          <ReviewModal
+            visible={showRatingModal}
+            onClose={() => setShowRatingModal(false)}
+            eventId={selectedEvent._id}
+            eventDateISO={selectedEvent.date}
+            eventTime={selectedEvent.time}
+            isAuthenticated={true}
+            isEngaged={savedEvents.includes(selectedEvent._id)}
+            onEngaged={() => {
+              setSavedEvents((prev) => [...prev, selectedEvent._id]);
+            }}
+          />
+        )}
       </ScrollView>
       <FilterModal />
     </SafeAreaView>
@@ -770,5 +818,45 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: "#00d4ff",
     fontWeight: "600",
+  },
+  
+  customDateContainer: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#333",
+  },
+  customDateTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  dateInput: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#2a2a2a",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  dateInputText: {
+    color: "#ccc",
+    fontSize: 14,
+  },
+  applyCustomFilter: {
+    backgroundColor: "#00d4ff",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  applyCustomFilterText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

@@ -1,13 +1,8 @@
-import { ReactNode } from "react";
+import { CategoryItem } from "@/types/EventTypes";
 import instance from ".";
 
-export interface CategoryItem {
-  name: ReactNode;
-  _id: string;
-  key: string;
-  label: string;
-  icon: string;
-}
+// Re-export type for backward compatibility
+export type { CategoryItem };
 
 export async function fetchCategories(): Promise<CategoryItem[]> {
   const { data } = await instance.get("/category");

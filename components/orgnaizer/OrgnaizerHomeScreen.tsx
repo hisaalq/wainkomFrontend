@@ -3,6 +3,7 @@ import { getOrgProfile } from "@/api/organizer";
 import { deleteToken } from "@/api/storage";
 import { COLORS } from "@/assets/style/color";
 import AuthContext from "@/context/authcontext";
+import { formatDateNice } from "@/utils/dateHelpers";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -177,14 +178,7 @@ const OrganizerHomeScreen = () => {
     ]);
   };
 
-  const formatDateNice = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  // Using utility function from @/utils/dateHelpers
 
   if (loading) {
     return (
