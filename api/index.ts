@@ -7,7 +7,7 @@ export const apiBaseUrl =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
   "http://localhost:8000/api";
-
+export const nBaseURL = "https://wainkombackend.onrender.com";
 // Useful for building absolute asset URLs when backend returns relative paths
 export const apiOrigin = apiBaseUrl.replace(/\/?api\/?$/i, "");
 
